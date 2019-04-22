@@ -2,9 +2,9 @@
 
 namespace Squirrel\Queries\Tests;
 
-use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Driver\Connection;
 use Doctrine\DBAL\Driver\PDOException;
+use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\DBAL\Exception\DriverException;
 use Squirrel\Queries\DBRawInterface;
@@ -12,6 +12,7 @@ use Squirrel\Queries\Doctrine\DBErrorHandler;
 use Squirrel\Queries\Exception\DBConnectionException;
 use Squirrel\Queries\Exception\DBDriverException;
 use Squirrel\Queries\Exception\DBLockException;
+use Squirrel\Queries\TestHelpers\DBSelectQueryForTests;
 
 /**
  * Test our error handler based on the Doctrine library

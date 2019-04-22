@@ -1,6 +1,6 @@
 <?php
 
-namespace Squirrel\Queries\Tests;
+namespace Squirrel\Queries\TestHelpers;
 
 use Squirrel\Queries\DBSelectQueryInterface;
 

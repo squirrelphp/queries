@@ -4,6 +4,7 @@ namespace Squirrel\Queries\Tests;
 
 use Squirrel\Queries\DBPassToLowerLayerTrait;
 use Squirrel\Queries\DBRawInterface;
+use Squirrel\Queries\TestHelpers\DBSelectQueryForTests;
 
 /**
  * Make sure all function calls are passed to the lower layer with the trait, by default

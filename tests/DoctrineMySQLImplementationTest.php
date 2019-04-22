@@ -3,7 +3,6 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\ResultStatement;
 use Doctrine\DBAL\Statement;
 use Squirrel\Queries\Doctrine\DBMySQLImplementation;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
