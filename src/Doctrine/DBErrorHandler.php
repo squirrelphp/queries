@@ -1,0 +1,406 @@
+<?php
+
+namespace Squirrel\Queries\Doctrine;
+
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\ConnectionException;
+use Doctrine\DBAL\Exception\DeadlockException;
+use Doctrine\DBAL\Exception\DriverException;
+use Doctrine\DBAL\Exception\LockWaitTimeoutException;
+use Squirrel\Queries\DBDebug;
+use Squirrel\Queries\DBException;
+use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\DBPassToLowerLayerTrait;
+use Squirrel\Queries\DBRawInterface;
+use Squirrel\Queries\DBSelectQueryInterface;
+use Squirrel\Queries\Exception\DBConnectionException;
+use Squirrel\Queries\Exception\DBDriverException;
+use Squirrel\Queries\Exception\DBLockException;
+
+/**
+ * Layer to handle query failures and attempt to repeat them if there was a:
+ *
+ * - deadlock or lock timeout
+ * - connection problem to the database server
+ *
+ * For other specific DB errors we generate a richer exception so outer layers
+ * know better what went wrong with our query
+ */
+class DBErrorHandler implements DBRawInterface
+{
+    // Default implementation of all DBRawInterface functions - pass to lower layer
+    use DBPassToLowerLayerTrait;
+
+    /**
+     * How much time in microseconds we should wait before retrying
+     *
+     * Each value in this array adds one retry, but before retrying
+     * it waits the defined number of microseconds. It makes sense
+     * to increase the wait time after every attempt, to give the
+     * database some breathing room to recover and makes it more likely
+     * for the process to still finish successfully
+     *
+     * With the default configuration, we wait almost 30 seconds in total
+     * - waiting longer does not have much advantages, as it will likely
+     * trigger other timeouts from gateways, CDNs etc., so better to
+     * fail on our end at that time
+     *
+     * @var int[]
+     */
+    private $connectionRetries = [
+        1000,     // 1ms
+        10000,    // 10ms
+        100000,   // 100ms
+        1000000,  // 1s
+        2000000,  // 2s
+        3000000,  // 3s
+        4000000,  // 4s
+        5000000,  // 5s
+        6000000,  // 6s
+        7000000,  // 7s
+    ];          // total: 28s 111ms - 10 attempts
+
+    /**
+     * How much time in microseconds we should wait before retrying
+     *
+     * Each value in this array adds one retry, but before retrying
+     * it waits the defined number of microseconds. It makes sense
+     * to increase the wait time after every attempt, to give the
+     * database some breathing room to recover and makes it more likely
+     * for the process to still finish successfully
+     *
+     * With the default configuration, we wait almost 30 seconds in total
+     * - waiting longer does not have much advantages, as it will likely
+     * trigger other timeouts from gateways, CDNs etc., so better to
+     * fail on our end at that time
+     *
+     * @var int[]
+     */
+    private $lockRetries = [
+        1000,     // 1ms
+        10000,    // 10ms
+        100000,   // 100ms
+        1000000,  // 1s
+        2000000,  // 2s
+        3000000,  // 3s
+        4000000,  // 4s
+        5000000,  // 5s
+        6000000,  // 6s
+        7000000,  // 7s
+    ];          // total: 28s 111ms - 10 attempts
+
+    /**
+     * Change connection retries configuration
+     *
+     * @param array $connectionRetries
+     */
+    public function setConnectionRetries(array $connectionRetries)
+    {
+        $this->connectionRetries = \array_map('intval', $connectionRetries);
+    }
+
+    /**
+     * Change deadlock retries configuration
+     *
+     * @param array $lockRetries
+     */
+    public function setLockRetries(array $lockRetries)
+    {
+        $this->lockRetries = \array_map('intval', $lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function transaction(callable $func, ...$arguments)
+    {
+        // If we are already in a transaction we just run the function
+        if ($this->lowerLayer->inTransaction() === true) {
+            return $func(...$arguments);
+        }
+
+        // Do a full transaction and try to repeat it if necessary
+        return $this->transactionExecute($func, $arguments, $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * Execute transaction - attempts to do it and repeats it if there was a problem
+     *
+     * @param callable $func
+     * @param array $arguments
+     * @param array $connectionRetries
+     * @param array $lockRetries
+     * @return mixed
+     *
+     * @throws DBException
+     */
+    protected function transactionExecute(
+        callable $func,
+        array $arguments,
+        array $connectionRetries,
+        array $lockRetries
+    ) {
+        try {
+            return $this->lowerLayer->transaction($func, ...$arguments);
+        } catch (DeadlockException | LockWaitTimeoutException $e) { // Deadlock or lock timeout occured
+            // Attempt to roll back
+            try {
+                /**
+                 * @var Connection $connection
+                 */
+                $connection = $this->lowerLayer->getConnection();
+                $connection->rollBack();
+            } catch (\Exception $eNotUsed) {
+            }
+
+            // Set flag for "not in a transaction"
+            $this->setTransaction(false);
+
+            // We have exhaused all deadlock retries and it is time to give up
+            if (count($lockRetries) === 0) {
+                throw DBDebug::createException(DBLockException::class, DBInterface::class, $e->getMessage());
+            }
+
+            // Wait for a certain amount of microseconds
+            \usleep(\array_shift($lockRetries));
+
+            // Repeat transaction
+            return $this->transactionExecute($func, $arguments, $connectionRetries, $lockRetries);
+        } catch (ConnectionException $e) { // Connection error occured
+            // Attempt to roll back, suppress any possible exceptions
+            try {
+                /**
+                 * @var Connection $connection
+                 */
+                $connection = $this->lowerLayer->getConnection();
+                $connection->rollBack();
+            } catch (\Exception $eNotUsed) {
+            }
+
+            // Set flag for "not in a transaction"
+            $this->setTransaction(false);
+
+            // Attempt to reconnect according to $connectionRetries
+            $connectionRetries = $this->attemptReconnect($connectionRetries);
+
+            // Reconnecting was unsuccessful
+            if ($connectionRetries === false) {
+                throw DBDebug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage());
+            }
+
+            // Repeat transaction
+            return $this->transactionExecute($func, $arguments, $connectionRetries, $lockRetries);
+        } catch (DriverException $e) { // Some other SQL related exception
+            // Attempt to roll back, suppress any possible exceptions
+            try {
+                /**
+                 * @var Connection $connection
+                 */
+                $connection = $this->lowerLayer->getConnection();
+                $connection->rollBack();
+            } catch (\Exception $eNotUsed) {
+            }
+
+            // Set flag for "not in a transaction"
+            $this->setTransaction(false);
+
+            // Throw DB exception for higher-up context to catch
+            throw DBDebug::createException(DBDriverException::class, DBInterface::class, $e->getMessage());
+        } catch (\Exception | \Throwable $e) { // Other exception, throw it as is, we do not know how to deal with it
+            // Attempt to roll back, suppress any possible exceptions
+            try {
+                /**
+                 * @var Connection $connection
+                 */
+                $connection = $this->lowerLayer->getConnection();
+                $connection->rollBack();
+            } catch (\Exception $eNotUsed) {
+            }
+
+            // Set flag for "not in a transaction"
+            $this->setTransaction(false);
+
+            // Throw exception again for higher-up context to catch
+            throw $e;
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function select($query, array $vars = []): DBSelectQueryInterface
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function fetch(DBSelectQueryInterface $selectQuery): ?array
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function clear(DBSelectQueryInterface $selectQuery): void
+    {
+        $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function fetchOne($query, array $vars = []): ?array
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function fetchAll($query, array $vars = []): array
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function insert(string $tableName, array $row = []): int
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function upsert(string $tableName, array $row = [], array $indexColumns = [], array $rowUpdates = []): int
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function update(array $query): int
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function delete(string $tableName, array $where = []): int
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function change(string $query, array $vars = []): int
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function lastInsertId($name = null): string
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
+    /**
+     * Pass through all calls to lower layer, and just add try-catch blocks so we can
+     * catch and process connection and (dead)lock exceptions / repeat queries
+     *
+     * @param string $name
+     * @param array $arguments
+     * @param array $connectionRetries
+     * @param array $lockRetries
+     * @return mixed
+     *
+     * @throws DBException
+     */
+    protected function internalCall(string $name, array $arguments, array $connectionRetries, array $lockRetries)
+    {
+        // Attempt to call the dbal function
+        try {
+            return $this->lowerLayer->$name(...$arguments);
+        } catch (ConnectionException $e) {
+            // If we are in a transaction we escalate it to transaction context
+            if ($this->lowerLayer->inTransaction()) {
+                throw $e;
+            }
+
+            // Attempt to reconnect according to $connectionRetries
+            $connectionRetries = $this->attemptReconnect($connectionRetries);
+
+            // Reconnecting was unsuccessful
+            if ($connectionRetries === false) {
+                throw DBDebug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage());
+            }
+
+            // Repeat our function
+            return $this->internalCall($name, $arguments, $connectionRetries, $lockRetries);
+        } catch (DeadlockException | LockWaitTimeoutException $e) {
+            // If we are in a transaction we escalate it to transaction context
+            if ($this->lowerLayer->inTransaction()) {
+                throw $e;
+            }
+
+            // We have exhaused all deadlock retries and it is time to give up
+            if (\count($lockRetries) === 0) {
+                throw DBDebug::createException(DBLockException::class, DBInterface::class, $e->getMessage());
+            }
+
+            // Wait for a certain amount of microseconds
+            \usleep(\array_shift($lockRetries));
+
+            // Repeat our function
+            return $this->internalCall($name, $arguments, $connectionRetries, $lockRetries);
+        } catch (DriverException $e) { // Some other SQL related exception
+            throw DBDebug::createException(DBDriverException::class, DBInterface::class, $e->getMessage());
+        }
+    }
+
+    /**
+     * Attempt to reconnect to DB server
+     *
+     * @param array $connectionRetries
+     * @return array|false
+     */
+    protected function attemptReconnect(array $connectionRetries)
+    {
+        // No more attempts left - return false to report back
+        if (\count($connectionRetries) === 0) {
+            return false;
+        }
+
+        // Wait for a certain amount of microseconds
+        \usleep(\array_shift($connectionRetries));
+
+        try {
+            /**
+             * @var Connection $connection
+             */
+            $connection = $this->lowerLayer->getConnection();
+            // Close connection and establish a new connection
+            $connection->close();
+            $connection->connect();
+
+            // If we still do not have a connection we need to try again
+            if ($connection->ping() === false) {
+                return $this->attemptReconnect($connectionRetries);
+            }
+        } catch (ConnectionException $e) { // Connection could not be established - try again
+            return $this->attemptReconnect($connectionRetries);
+        }
+
+        // Go back to the previous context with our new connection
+        return $connectionRetries;
+    }
+}
