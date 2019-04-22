@@ -19,7 +19,7 @@ Use Squirrel\Queries\DBInterface as a type hint in your services. The interface 
 
 In addition, this library supports structured SELECT and UPDATE queries which break down the queries into its parts and take care of your field names and parameters automatically.
 
-For a solution which integrates easily with the Symfony framework, check out [squirrel/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrel/repositories](https://github.com/squirrelphp/repositories) and [squirrel/repositories-bundle](https://github.com/squirrelphp/repositories-bundle).
+For a solution which integrates easily with the Symfony framework, check out [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrelphp/entities](https://github.com/squirrelphp/entities) and [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle).
 
 If you want to assemble a DBInterface object yourself, something like the following code can be a start:
 
@@ -421,9 +421,9 @@ It is often tempting to solve many problems with one query, but the downsides ar
 
 Sometimes a complex query can make more sense, but it should be the rare exception for less than 1% of cases.
 
-### Use squirrel/queries-bundle and squirrel/repositories
+### Use squirrelphp/queries-bundle and squirrelphp/entities
 
-`squirrelphp/repositories` is a library built on top of `squirrelphp/queries` and offers easy manipulation of database tables and follows all the above guidelines. `squirrelphp/repositories-bundle` is the Symfony bundle integrating repositories into a Symfony project.
+[squirrelphp/entities](https://github.com/squirrelphp/entities) is a library built on top of `squirrelphp/queries` and offers easy manipulation of database tables and follows all the above guidelines. [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle) is the Symfony bundle integrating entities and repositories into a Symfony project.
 
 Why don't you support X? Why is feature Y not included?
 -------------------------------------------------------

@@ -32,8 +32,8 @@
     },
     "suggest": {
         "squirrelphp/queries-bundle": "Symfony integration of squirrelphp/queries - automatic assembling of decorated connections",
-        "squirrelphp/repositories": "Makes defining entities possible",
-        "squirrelphp/repositories-bundle": "Automatic integration of squirrelphp/repositories in Symfony"
+        "squirrelphp/entities": "Makes defining entities possible",
+        "squirrelphp/entities-bundle": "Automatic integration of squirrelphp/entities in Symfony"
     },
     "config": {
         "sort-packages": true
