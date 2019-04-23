@@ -32,14 +32,14 @@ class DBDebug
 
         // Go through backtrace and find the topmost caller
         foreach ($backtraceList as $backtrace) {
-            // If we are not in an object context, we go further until we find one
-            if (!isset($backtrace['object'])) {
-                continue;
-            }
-
             // Replace backtrace instance if we find a valid class insance
             foreach ($backtraceClasses as $backtraceClass) {
-                if ($backtrace['object'] instanceof $backtraceClass) {
+                // Check if the class or interface we are looking for is implemented or used
+                // by the current backtrace class
+                if (\in_array($backtraceClass, \class_implements($backtrace['class'])) ||
+                    \in_array($backtraceClass, \class_parents($backtrace['class'])) ||
+                    $backtraceClass === $backtrace['class']
+                ) {
                     $lastInstance = $backtrace;
                     $assignedBacktraceClass = $backtraceClass;
                 }
