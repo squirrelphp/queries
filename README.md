@@ -1,6 +1,8 @@
 Squirrel Queries Component
 ==========================
 
+[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)
+
 Provides a slimmed down concise interface (DBInterface) for database queries and transactions. The limited interface is aimed to avoid confusion/misuse and encourage fail-safe usage.
 
 Doctrine is used as the underlying connection (and abstraction), what we add are an upsert (MERGE) functionality, structured queries which are easier to write and read (and make errors less likely), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.).
