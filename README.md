@@ -1,7 +1,7 @@
 Squirrel Queries Component
 ==========================
 
-[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)
+[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)  [![PHP Version](https://img.shields.io/packagist/php-v/squirrelphp/queries.svg)](https://packagist.org/packages/squirrelphp/queries)
 
 Provides a slimmed down concise interface (DBInterface) for database queries and transactions. The limited interface is aimed to avoid confusion/misuse and encourage fail-safe usage.
 
@@ -17,9 +17,9 @@ Installation
 Usage
 -----
 
-Use Squirrel\Queries\DBInterface as a type hint in your services. The interface options are based upon Doctrine and PDO with slight tweaks. If you know Doctrine or PDO you should be able to use this library easily.
+Use Squirrel\Queries\DBInterface as a type hint in your services. The interface options are based upon Doctrine and PDO with some tweaks.
 
-In addition, this library supports structured SELECT and UPDATE queries which break down the queries into its parts and take care of your field names and parameters automatically.
+If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are an addition helping you to make readable queries and taking care of your column field names and parameters automatically.
 
 For a solution which integrates easily with the Symfony framework, check out [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrelphp/entities](https://github.com/squirrelphp/entities) and [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle).
 
@@ -49,7 +49,7 @@ If you want to assemble a DBInterface object yourself, something like the follow
     // \Squirrel\Queries\DBInterface
     
     $fetchEntry = function(DBInterface $db) {
-      return $db->fetchOne('SELECT * FROM table');
+        return $db->fetchOne('SELECT * FROM table');
     };
     
     $fetchEntry($errorLayer);
@@ -97,12 +97,12 @@ Instead of writing raw SQL you can use a structured query:
 
 ```php
 $selectStatement = $db->select([
-  'field' => 'fieldname',
-  'table' => 'tablename',
-  'where' => [
-    'restriction' => 5,
-    'restriction2' => 8,
-  ],
+    'field' => 'fieldname',
+    'table' => 'tablename',
+    'where' => [
+        'restriction' => 5,
+        'restriction2' => 8,
+    ],
 ]);
 $firstRow = $db->fetch($selectStatement);
 $db->clear($selectStatement);
@@ -120,31 +120,31 @@ Structured queries can replace almost all string select queries, even with multi
 
 ```php
 $selectStatement = $db->select([
- 'fields' => [
-   'fufumama',
-   'b.lalala',
-   'result' => 'a.setting_value',
-   'result2' => ':a.setting_value:+:b.blabla_value:',
- ],
- 'tables' => [
-   'blobs.aa_sexy a',
-   ':blobs.aa_blubli: :b: LEFT JOIN :blobs.aa_blubla: :c: ON (:c.field: = :b.field5: AND :b.sexy: = ?)' => 5,
- ],
- 'where' => [
-   ':a.field: = :b.field:',
-   'setting_id' => 'orders_xml_override',
-   'boring_field_name' => [5,3,8,13],
-   ':setting_value: = ? OR :setting_value2: = ?' => ['one','two'],
- ],
- 'group' => [
-   'a.field',
- ],
- 'order' => [
-   'a.field' => 'DESC',
- ],
- 'limit' => 10,
- 'offset' => 5,
- 'lock' => true,
+   'fields' => [
+       'fufumama',
+       'b.lalala',
+       'result' => 'a.setting_value',
+       'result2' => ':a.setting_value:+:b.blabla_value:',
+   ],
+   'tables' => [
+       'blobs.aa_sexy a',
+       ':blobs.aa_blubli: :b: LEFT JOIN :blobs.aa_blubla: :c: ON (:c.field: = :b.field5: AND :b.sexy: = ?)' => 5,
+   ],
+   'where' => [
+       ':a.field: = :b.field:',
+       'setting_id' => 'orders_xml_override',
+       'boring_field_name' => [5,3,8,13],
+       ':setting_value: = ? OR :setting_value2: = ?' => ['one','two'],
+   ],
+   'group' => [
+        'a.field',
+   ],
+   'order' => [
+        'a.field' => 'DESC',
+   ],
+   'limit' => 10,
+   'offset' => 5,
+   'lock' => true,
 ]);
 $firstRow = $db->fetch($selectStatement);
 $db->clear($selectStatement);
@@ -163,195 +163,290 @@ Important parts of how the conversion works:
 - If you set "lock" to true "FOR UPDATE" is added to the query, so the results are locked within the current transaction.
 - The arguments are checked as much as possible and if an option/expression is not valid, a DBInvalidOptionException is thrown. This does not include SQL errors, as the SQL components knows nothing of the allowed field names, table names or what constitutes a valid SQL expression.
 
+You can pass a structured SELECT query directly to `fetchOne` and `fetchAll` to retrieve one or all results.
+
 ### Change queries
 
 Custom INSERT, UPDATE and DELETE queries (or other custom queries) can be executed with the `change` function, implying that this query changes something in contrast to a SELECT query:
 
 ```php
-$rowsAffected = $dbInterface->change('UPDATE users SET first_name = ?, last_name = ?, login_number = login_number + 1 WHERE user_id = ?', [
-  'Liam', // first_name
-  'Henry', // last_name
-  5, // user_id
+$rowsAffected = $db->change('UPDATE users SET first_name = ?, last_name = ?, login_number = login_number + 1 WHERE user_id = ?', [
+    'Liam', // first_name
+    'Henry', // last_name
+    5, // user_id
 ]);
 ```
 
 ```php
-$rowsAffected = $dbInterface->change('DELETE FROM users WHERE user_id = ? AND first_name = ?', [
-  5, // user_id
-  'Liam', // first_name
+$rowsAffected = $db->change('DELETE FROM users WHERE user_id = ? AND first_name = ?', [
+    5, // user_id
+    'Liam', // first_name
 ]);
 ```
 
 ```php
-$rowsAffected = $dbInterface->change('INSERT INTO users (user_id, first_name) SELECT user_id, first_name FROM users_backup');
+$rowsAffected = $db->change('INSERT INTO users (user_id, first_name) SELECT user_id, first_name FROM users_backup');
 ```
+
+It is not recommended to use the `change` function except if you have no other choice - most queries can be done using structured UPDATE, UPSERT, INSERT and DELETE queries. Yet if you need subqueries or other advanced database functionality `change` is your only option.
 
 ### Structured UPDATE queries
 
-TODO
+Instead of using change queries, for updates you can use a structured UPDATE query very similar to the structured SELECT query. An example:
+
+```php
+$rowsAffected = $db->update([
+    'changes' => [
+        'fieldname' => 'string',
+        'locationId' => 5,
+    ],
+    'table' => 'tablename',
+    'where' => [
+        'restriction' => 5,
+        'restriction2' => 8,
+    ],
+]);
+```
+
+This structured query is identical to the following string query:
+
+```php
+$rowsAffected = $db->change('UPDATE ´tablename´ SET ´fieldname´=?,`locationId`=? WHERE ´restriction´=? AND ´restriction2´=?', ['string', 5, 5, 8]);
+```
+
+Structured UPDATE queries make mistakes less likely and are easier to read. This shows all the possible options:
+
+```php
+$rowsAffected = $db->update([
+    'changes' => [
+        'fieldname' => 'string',
+        'locationId' => 5,
+        ':counter: = :counter: + 1',
+    ],
+    'table' => 'tablename',
+    'where' => [
+        'restriction' => 5,
+        ':counter: > ?' => 0,
+    ],
+    'order' => [
+        'counter' => 'DESC',
+    ],
+    'limit' => 3,
+]);
+```
 
 ### INSERT
 
-TODO
-
-#### Example
+`insert` does an INSERT query into one table, example:
 
 ```php
 // Does a prepared statement internally separating query and content,
 // also quotes the table name and all the identifier names
-$dbInterface->insert('yourdatabase.yourtable', [
-  'tableId' => 5,
-  'column1' => 'Henry',
-  'other_column' => 'Liam',
+$rowsAffected = $db->insert('yourdatabase.yourtable', [
+    'tableId' => 5,
+    'column1' => 'Henry',
+    'other_column' => 'Liam',
 ]);
 
 // Get the last insert ID if you have an autoincrement primary index:
-$newInsertedId = $dbInterface->lastInsertId();
+$newInsertedId = $db->lastInsertId();
+```
+
+The equivalent string query would be:
+
+```php
+// Does a prepared statement internally separating query and content,
+// also quotes the table name and all the identifier names
+$rowsAffected = $db->change('INSERT INTO `yourdatabase`.`yourtable` (`tableId`,`column1`,`other_column`) VALUES (?,?,?)', [5, 'Henry', 'Liam']);
+
+// Get the last insert ID if you have an autoincrement primary index:
+$newInsertedId = $db->lastInsertId();
 ```
 
 ### UPSERT / MERGE
 
-TODO
+#### Definition
 
-#### Examples
+UPSERT (update-or-insert) queries are an addition to SQL, known under different queries in different database systems:
 
-An example without using `$rowUpdates`, which means all `$row` entries are used for the update except for `$indexColumns`:
+- MySQL implemented them as "INSERT ... ON DUPLICATE KEY UPDATE"
+- PostgreSQL and SQLite as "INSERT ... ON CONFLICT (index) DO UPDATE"
+- The ANSI standard knows them as MERGE queries
+
+An upsert query tries to update a row, but if the row does not exists it does an insert instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT is much faster than that too.
+
+PostgreSQL and SQLite need the specific column names which form the unique index which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an upsert query.
+
+#### Usage and examples
+
+The first two arguments for the `upsert` function are identical to the normal insert function, the third defines the index columns which is your unique or primary key in the database. And the last array is the updates to do if the entry already exists in the database, but it is optional.
+
+An example could be:
 
 ```php
-// Does a prepared statement internally separating query and content,
-// also quotes the table name and all the field names
-$dbInterface->upsert('yourdatabase.yourtable', [
-  'tableId' => 5,
-  'column1' => 'Henry',
-  'other_column' => 'Liam',
+$db->upsert('users_visits', [
+    'userId' => 5,
+    'visit' => 1,
 ], [
-  'tableId',
+    'userId',
+], [
+    ':visit: = :visit: + 1'
 ]);
 ```
 
-The first two arguments are identical to the normal insert function, the third defines the index columns which is your unique or primary key in the database. For MySQL this is converted into this prepared statement:
-
-```sql
-INSERT INTO `yourdatabase`.`yourtable` (`tableId`,`column1`,`other_column`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `column1`=?,`other_column`=?
-```
-
-If you want to customize the UPDATE part you use `$rowUpdates`:
+For MySQL, this query would be converted to:
 
 ```php
-// Does a prepared statement internally separating query and content,
-// also quotes the table name and all the field names
-$dbInterface->upsert('yourdatabase.yourtable', [
-  'tableId' => 5,
-  'column1' => 'Henry',
-  'other_column' => 'Liam',
-  'access_number' => 1,
+$db->change('INSERT INTO `users_visits` (`userId`,`visit`) VALUES (?,?) ON DUPLICATE KEY UPDATE `visit` = `visit` + 1', [5, 1]);
+```
+
+For PostgreSQL/SQLite it would be:
+
+```php
+$db->change('INSERT INTO `users_visits` (`userId`,`visit`) VALUES (?,?) ON CONFLICT (`userId`) DO UPDATE `visit` = `visit` + 1', [5, 1]);
+```
+
+If no entry exists in `users_visits`, one is inserted with `visit` set to 1. But if an entry already exists an UPDATE with `visit = visit + 1` is done instead.
+
+Defining the UPDATE part is optional, and if left empty the UPDATE just does the same changes as the INSERT minus the index columns. Example:
+
+```php
+$db->upsert('users_names', [
+    'userId' => 5,
+    'firstName' => 'Jane',
 ], [
-  'tableId',
-], [
-  'column1' => 'Henry',
-  'access_number = access_number + 1',
+    'userId',
 ]);
 ```
 
-This is converted into this prepared statement for MySQL:
+This would INSERT with userId and firstName, but if the row already exists, it would just update firstName to Jane, so for MySQL it would be converted to:
 
-```sql
-INSERT INTO `yourdatabase`.`yourtable` (`tableId`,`column1`,`other_column`,`access_number`) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE `column1`=?,access_number = access_number + 1
+```php
+$db->change('INSERT INTO `users_names` (`userId`,`firstName`) VALUES (?,?) ON DUPLICATE KEY UPDATE `firstName`=?, [5, 'Jane', 'Jane']);
 ```
 
-As you can see, we decided to not make the UPDATE identical to the INSERT - we only change column1 and we also inserted a custom SQL part with `access_number = access_number + 1`. Whenever an entry in `$rowUpdates` has no named key the value is used as-is in the SQL query.
+The most important thing to remember is that you need a unique or primary index involved in an UPSERT query - so you need to know the indexing of the table.
 
-### UPDATE / DELETE / CUSTOM INSERT
+### DELETE
 
-TODO
+The `delete` function offers a structured way of doing a DELETE query for one table. Example:
+
+```php
+$rowsAffected = $db->delete('users_names', [
+    'userId' => 13,
+]);
+```
+
+The first argument is the name of the table, the second argument the WHERE restrictions. So as a pure string query this would be equal to:
+
+```php
+$rowsAffected = $db->change('DELETE FROM `users_names` WHERE `userId`=?', [13]);
+```
+
+The structured WHERE entries follow the same logic/rules as for structured SELECT and UPDATE queries.
 
 ### TRANSACTION
 
-Just pass a callable/function to the `transaction` method and DBInterface will take care of the commit/rollback parts automatically.
+Just pass a callable/function to the `transaction` method and DBInterface will take care of the commit/rollback parts automatically and do its best to make the transaction succeed.
 
 #### Examples
 
 ```php
-$dbInterface->transaction(function(){
-  // Do queries in here as much as you want, it will all be one transaction
-  // and committed as soon as this function ends
+$db->transaction(function(){
+    // Do queries in here as much as you want, it will all be one transaction
+    // and committed as soon as this function ends
 });
 ```
 
 An actual example might be:
 
 ```php
-$dbInterface->transaction(function() use ($dbInterface) {
-  $dbInterface->insert('myTable', [
-    'tableName' => 'Henry',
-  ]);
+$db->transaction(function() use ($db) {
+    $db->insert('myTable', [
+      'tableName' => 'Henry',
+    ]);
   
-  $tableId = $dbInterface->lastInsertId();
+    $tableId = $db->lastInsertId();
   
-  $dbInterface->update('UPDATE otherTable SET tableId = ? WHERE tableName = ?', [$tableId, 'Henry']);
+    $db->update([
+        'table' => 'otherTable',
+        'changes' => [
+            'tableName' => 'Henry',
+        ],
+        'where' => [
+            'tableId' => $tableId,
+        ],
+    ]);
 });
 ```
 
-If you call transaction within a transaction function, that function will just become part of the "outer transaction" and will fail or succeed with it:
+If you call `transaction` within a transaction function, that function will just become part of the "outer transaction" and will fail or succeed with it:
 
 ```php
-$dbInterface->transaction(function() use ($dbInterface) {
-  $dbInterface->insert('myTable', [
-    'tableId' => 5,
-    'tableName' => 'Henry',
-  ]);
+$db->transaction(function() use ($db) {
+    $db->insert('myTable', [
+        'tableId' => 5,
+        'tableName' => 'Henry',
+    ]);
   
-  $tableId = $dbInterface->lastInsertId();
+    $tableId = $db->lastInsertId();
   
-  // This still does exactly the same as in the previous example, because the
-  // function will be executed without a "new" transaction being started,
-  // the existing one just continues
-  $dbInterface->transaction(function() use ($dbInterface, $tableId)) {
-    // If this fails, then the error handler will attempt to repeat the outermost
-    // transaction function, which is what you would want / expect, so it starts
-    // with the Henry insert again
-    $dbInterface->update('UPDATE otherTable SET tableId = ? WHERE tableName = ?', [$tableId, 'Henry']);
-  });
+    // This still does exactly the same as in the previous example, because the
+    // function will be executed without a "new" transaction being started,
+    // the existing one just continues
+    $db->transaction(function() use ($db, $tableId)) {
+        // If this fails, then the error handler will attempt to repeat the outermost
+        // transaction function, which is what you would want / expect, so it starts
+        // with the Henry insert again
+        $db->update([
+            'table' => 'otherTable',
+            'changes' => [
+                'tableName' => 'Henry',
+            ],
+            'where' => [
+                'tableId' => $tableId,
+            ],
+        ]);
+    });
 });
 ```
 
-If there is a deadlock or connection problem, the error handler will roll back the transaction and attempt to retry it 10 times, with increasing wait times inbetween. Only if there are 10 failures within about 30 seconds will the exception be escalated with a DBException.
+If there is a deadlock or connection problem, the error handler (DBErrorHandler) will roll back the transaction and attempt to retry it 10 times, with increasing wait times inbetween. Only if there are 10 failures within about 30 seconds will the exception be escalated with a DBException.
 
 If you want to pass arguments to $func, this would be an example:
 
 ```php
-$dbInterface->transaction(function($dbInterface, $table, $tableName) {
-  $dbInterface->insert($table, [
-    'tableName' => $tableName,
-  ]);
+$db->transaction(function($db, $table, $tableName) {
+    $db->insert($table, [
+        'tableName' => $tableName,
+    ]);
   
-  $tableId = $dbInterface->lastInsertId();
+    $tableId = $db->lastInsertId();
   
-  $dbInterface->update('UPDATE otherTable SET tableId = ? WHERE tableName = ?', [$tableId, $tableName]);
-}, $dbInterface, 'myTable', 'Henry');
+    $db->update([
+        'table' => 'otherTable',
+        'changes' => [
+            'tableName' => $tableName,
+        ],
+        'where' => [
+            'tableId' => $tableId,
+        ],
+    ]);
+}, $db, 'myTable', 'Henry');
 ```
 
 ### QUOTE IDENTIFIERS
 
-```php
-/**
- * Quotes an identifier, like a table name or column name, so there is no risk
- * of overlap with a reserved keyword
- *
- * @param string $identifier
- * @return string
- */
-public function quoteIdentifier(string $identifier) : string;
-```
+If you want to be safe it is recommended to quote all identifiers (table names and column names) with the DBInterface `quoteIdentifier` function for non-structured `select` and `update` queries.
 
-If you want to be safe it is recommended to quote all identifiers for the `select` and `update` function calls. For `insert` and `upsert` the quoting is done for you.
+For `insert` and `upsert` the quoting is done for you, and for structured queries most of the quoting is done for you, except if you use an expression, where you can just use colons to specify a table or column name.
 
 If you quote all identifiers, then changing database systems (where different reserved keywords might exist) or upgrading a database (where new keywords might be reserved) is easier.
 
 #### Examples
 
 ```php
-$rowsAffected = $dbInterface->update('INSERT INTO ' . $dbInterface->quoteIdentifier('users') . ' (' . $dbInterface->quoteIdentifier('user_id') . ', ' . $dbInterface->quoteIdentifier('first_name') . ') SELECT ' . $dbInterface->quoteIdentifier('user_id') . ', ' . $dbInterface->quoteIdentifier('first_name') . ' FROM ' . $dbInterface->quoteIdentifier('users_backup'));
+$rowsAffected = $db->change('UPDATE ' . $db->quoteIdentifier('users') . ' SET ' . $db->quoteIdentifier('first_name') . ')=? WHERE ' . $db->quoteIdentifier('user_id') . '=?', ['Sandra', 5]);
 ```
 
 Guideline to use this library
@@ -364,15 +459,15 @@ To use this library to its fullest it is recommended to follow these guidelines:
 Instead of doing a query like this:
 
 ```php
-$rowsAffected = $dbInterface->update('UPDATE sessions SET time_zone = \'Europe/Zurich\' WHERE session_id = \'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV\'');
+$rowsAffected = $db->change('UPDATE sessions SET time_zone = \'Europe/Zurich\' WHERE session_id = \'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV\'');
 ```
 
-Do it like this:
+Do it like this: (or use a structured query, see the next tip!)
 
 ```php
-$rowsAffected = $dbInterface->update('UPDATE sessions SET time_zone = ? WHERE session_id = ?', [
-  'Europe/Zurich',
-  'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV',
+$rowsAffected = $db->update('UPDATE sessions SET time_zone = ? WHERE session_id = ?', [
+    'Europe/Zurich',
+    'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV',
 ]);
 ```
 
@@ -383,34 +478,18 @@ There are many advantages to separating the query from its data:
 3. Queries become shorter and more readable
 4. Using a different database system becomes easier, as you might use `"` to wrap strings in MySQL, while you would use `'` in PostgreSQL (`"` is used for identifiers). If you use ? placeholders you do not need to use any type of quotes for the data, so your queries become more universal.
 
-### Quote identifiers (table names and column names)
+### Use structured queries
 
-It makes sense to quote all your table names and column names in order to avoid having any overlap with reserved keywords and making your queries more resilient. So instead of
+Structured SELECT and UPDATE queries are easier to write and read and make separating the query from the data easier, while still containing basically the same information as a "pure" string query, so use them instead of writing SQL queries on your own.
 
-```php
-$rowsAffected = $dbInterface->update('UPDATE sessions SET time_zone = ? WHERE session_id = ?', [
-  'Europe/Zurich',
-  'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV',
-]);
-```
-
-You would change it to
-
-```php
-$rowsAffected = $dbInterface->update('UPDATE ' . $dbInterface->quoteIdentifier('sessions') . ' SET ' . $dbInterface->quoteIdentifier('time_zone') . ' = ? WHERE ' . $dbInterface->quoteIdentifier('session_id') . ' = ?', [
-  'Europe/Zurich',
-  'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV',
-]);
-```
-
-While this might seem overly verbose you are making your queries more future proof - if you upgrade your database system new reserved keywords could be added which conflict with a query, or changing the database system could lead to a different set of reserved keywords.
+INSERT, UPSERT und DELETE queries are already structured because their focus is limited. With these five query types you should be able to handle 99% of queries.
 
 ### Use simple queries
 
 Avoid complicated queries if at all possible. Queries become increasingly complicated if:
 
 - more than two tables are involved
-- GROUP BY is used
+- GROUP BY or HAVING is used
 - subqueries are used
 - database specific features are used (stored procedures, triggers, views, etc.)
 
@@ -425,7 +504,11 @@ Sometimes a complex query can make more sense, but it should be the rare excepti
 
 ### Use squirrelphp/queries-bundle and squirrelphp/entities
 
-[squirrelphp/entities](https://github.com/squirrelphp/entities) is a library built on top of `squirrelphp/queries` and offers easy manipulation of database tables and follows all the above guidelines. [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle) is the Symfony bundle integrating entities and repositories into a Symfony project.
+[squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle) is an integration of this library into Symfony, so you can get started quickly.
+
+[squirrelphp/entities](https://github.com/squirrelphp/entities) is a library built on top of `squirrelphp/queries` and offers support for entities and repositories while following all the above guidelines.
+
+[squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle) is the Symfony bundle integrating entities and repositories into a Symfony project.
 
 Why don't you support X? Why is feature Y not included?
 -------------------------------------------------------
