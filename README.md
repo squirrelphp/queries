@@ -5,7 +5,7 @@ Squirrel Queries Component
 
 Provides a slimmed down concise interface (DBInterface) for database queries and transactions. The limited interface is aimed to avoid confusion/misuse and encourage fail-safe usage.
 
-Doctrine is used as the underlying connection (and abstraction), what we add are an upsert (MERGE) functionality, structured queries which are easier to write and read (and make errors less likely), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.).
+Doctrine is used as the underlying connection (and abstraction), what we add are an upsert (MERGE) functionality, structured queries which are easier to write and read (and separate query and data automatically), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.).
 
 By default this library provides two layers, one dealing with Doctrine DBAL (passing the queries, processing and returning the results) and one dealing with errors (DBErrorHandler). DBErrorHandler catches deadlocks and connection problems and tries to repeat the query or transaction, and it unifies the exceptions coming from DBAL so the originating call to DBInterface is provided and the error can easily be found.
 
@@ -19,7 +19,7 @@ Usage
 
 Use Squirrel\Queries\DBInterface as a type hint in your services. The interface options are based upon Doctrine and PDO with some tweaks.
 
-If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are an addition helping you to make readable queries and taking care of your column field names and parameters automatically.
+If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are an addition helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
 
 For a solution which integrates easily with the Symfony framework, check out [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrelphp/entities](https://github.com/squirrelphp/entities) and [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle).
 
@@ -80,7 +80,7 @@ All ? are replaced by the array values in the second argument (those are the que
 $selectStatement = $db->select('SELECT fieldname FROM tablename WHERE restriction = 5 AND restriction2 = 8');
 ```
 
-It is recommended to use query parameters for any query data, even if it is fixed, because it is secure no matter where the data came from (like user input) and the charset or type does not matter (string, integer, boolean).
+It is recommended to use query parameters for any query data, even if it is fixed, because it is secure no matter where the data came from (like user input) and the charset or type does not matter (string, integer, boolean), which means SQL injections are not possible.
 
 `fetchOne` and `fetchAll` can be used instead of the `select` function to directly retrieve exactly one row (`fetchOne`) or all rows (`fetchAll`) for a SELECT query, for example:
 
@@ -219,17 +219,21 @@ Structured UPDATE queries make mistakes less likely and are easier to read. This
 ```php
 $rowsAffected = $db->update([
     'changes' => [
-        'fieldname' => 'string',
-        'locationId' => 5,
-        ':counter: = :counter: + 1',
+        'a.fieldname' => 'some change',
+        'b.locationId' => 5,
+        ':a.counter: = :a.counter: + 1',
     ],
-    'table' => 'tablename',
+    'tables' => ['
+      'tablename a',
+      'othertable b',
+    ],
     'where' => [
-        'restriction' => 5,
-        ':counter: > ?' => 0,
+        ':a.id: = :b.id:',
+        'a.restriction' => 5,
+        ':a.counter: > ?' => 0,
     ],
     'order' => [
-        'counter' => 'DESC',
+        'a.counter' => 'DESC',
     ],
     'limit' => 3,
 ]);
@@ -240,8 +244,6 @@ $rowsAffected = $db->update([
 `insert` does an INSERT query into one table, example:
 
 ```php
-// Does a prepared statement internally separating query and content,
-// also quotes the table name and all the identifier names
 $rowsAffected = $db->insert('yourdatabase.yourtable', [
     'tableId' => 5,
     'column1' => 'Henry',
@@ -255,8 +257,6 @@ $newInsertedId = $db->lastInsertId();
 The equivalent string query would be:
 
 ```php
-// Does a prepared statement internally separating query and content,
-// also quotes the table name and all the identifier names
 $rowsAffected = $db->change('INSERT INTO `yourdatabase`.`yourtable` (`tableId`,`column1`,`other_column`) VALUES (?,?,?)', [5, 'Henry', 'Liam']);
 
 // Get the last insert ID if you have an autoincrement primary index:
@@ -273,13 +273,13 @@ UPSERT (update-or-insert) queries are an addition to SQL, known under different 
 - PostgreSQL and SQLite as "INSERT ... ON CONFLICT (index) DO UPDATE"
 - The ANSI standard knows them as MERGE queries
 
-An upsert query tries to update a row, but if the row does not exists it does an insert instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT is much faster than that too.
+An upsert query tries to update a row, but if the row does not exists it does an insert instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT exists to be a faster and easier solution.
 
-PostgreSQL and SQLite need the specific column names which form the unique index which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an upsert query.
+PostgreSQL and SQLite need the specific column names which form a unique index (already existing for the table) which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an upsert query.
 
 #### Usage and examples
 
-The first two arguments for the `upsert` function are identical to the normal insert function, the third defines the index columns which is your unique or primary key in the database. And the last array is the updates to do if the entry already exists in the database, but it is optional.
+The first two arguments for the `upsert` function are identical to the normal insert function, the third defines the columns which form a unique or primary key for the table in the database. And the last array is the updates to do if the entry already exists in the database, but it is optional.
 
 An example could be:
 
@@ -434,6 +434,8 @@ $db->transaction(function($db, $table, $tableName) {
     ]);
 }, $db, 'myTable', 'Henry');
 ```
+
+When using SELECT queries within a transaction you should always remember that the results are usually not locked (so not protected from UPDATE or DELETE), except if you apply "... FOR UPDATE" (in a string SELECT query) or by setting `lock` to true in a structured SELECT.
 
 ### QUOTE IDENTIFIERS
 
