@@ -4,8 +4,8 @@ namespace Squirrel\Queries\Doctrine;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\FetchMode;
-use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBDebug;
+use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBRawInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;

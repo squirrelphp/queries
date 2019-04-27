@@ -35,7 +35,7 @@
                 "conditions": []
             },
             {
-                "action": "vendor/bin/phpcs --standard=psr2 --extensions=php src tests",
+                "action": "vendor/bin/phpcs --standard=ruleset.xml --extensions=php src tests",
                 "options": [],
                 "conditions": []
             }

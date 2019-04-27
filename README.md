@@ -1,11 +1,11 @@
-Squirrel Queries Component
-==========================
+Squirrel Queries
+================
 
-[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)  [![PHP Version](https://img.shields.io/packagist/php-v/squirrelphp/queries.svg)](https://packagist.org/packages/squirrelphp/queries)
+[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) ![PHPStan](https://img.shields.io/badge/style-level%207-success.svg?style=flat-round&label=phpstan) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)  [![PHP Version](https://img.shields.io/packagist/php-v/squirrelphp/queries.svg)](https://packagist.org/packages/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE)
 
-Provides a slimmed down concise interface (DBInterface) for database queries and transactions. The limited interface is aimed to avoid confusion/misuse and encourage fail-safe usage.
+Provides a slimmed down concise interface for low level database queries and transactions (DBInterface) aswell as a query builder to make it easier and more expressive to create queries (DBBuilderInterface). The interfaces are limited to avoid confusion/misuse and encourage fail-safe usage.
 
-Doctrine is used as the underlying connection (and abstraction), what we add are an upsert (MERGE) functionality, structured queries which are easier to write and read (and separate query and data automatically), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.).
+Doctrine is used as the underlying connection (and abstraction), what we add are an upsert (MERGE) functionality, structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.).
 
 By default this library provides two layers, one dealing with Doctrine DBAL (passing the queries, processing and returning the results) and one dealing with errors (DBErrorHandler). DBErrorHandler catches deadlocks and connection problems and tries to repeat the query or transaction, and it unifies the exceptions coming from DBAL so the originating call to DBInterface is provided and the error can easily be found.
 
@@ -14,18 +14,27 @@ Installation
 
     composer require squirrelphp/queries
 
-Usage
------
+Table of contents
+-----------------
 
-Use Squirrel\Queries\DBInterface as a type hint in your services. The interface options are based upon Doctrine and PDO with some tweaks.
+- [Setting up](#setting-up)
+- [DBInterface - low level interface](#dbinterface---low-level-interface)
+- [DBBuilderInterface - higher level query builder](#dbbuilderinterface---higher-level-query-builder)
+- [Guidelines to use this library](#guidelines-to-use-this-library)
 
-If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are an addition helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
+Setting up
+----------
+
+Use Squirrel\Queries\DBInterface as a type hint in your services for the low-level interface, and/or Squirrel\Queries\DBBuilderInterface for the query builder. The low-level interface options are based upon Doctrine and PDO with some tweaks, and the builder interface is an expressive way to write structured (and not too complex) queries.
+
+If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are an addition to the low-level interface, helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
 
 For a solution which integrates easily with the Symfony framework, check out [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrelphp/entities](https://github.com/squirrelphp/entities) and [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle).
 
 If you want to assemble a DBInterface object yourself, something like the following code can be a start:
 
     use Doctrine\DBAL\DriverManager;
+    use Squirrel\Queries\DBBuilderInterface;
     use Squirrel\Queries\DBInterface;
     use Squirrel\Queries\Doctrine\DBErrorHandler;
     use Squirrel\Queries\Doctrine\DBMySQLImplementation;
@@ -54,6 +63,24 @@ If you want to assemble a DBInterface object yourself, something like the follow
     
     $fetchEntry($errorLayer);
     
+    // A builder just needs a DBInterface to be created:
+    
+    $queryBuilder = new DBBuilderInterface($errorLayer);
+    
+    // The query builder generates more readable queries, and
+    // helps your IDE in terms of type hints / possible options
+    // depending on the query you are doing
+    $entries = $queryBuilder
+        ->select()
+        ->fields([
+          'id',
+          'name',
+        ])
+        ->where([
+          'name' => 'Robert',
+        ])
+        ->getAllEntries();
+    
     // If you want to add more layers, you can create a
     // class which implements DBRawInterface and includes
     // the DBPassToLowerLayer trait and then just overwrite
@@ -63,6 +90,9 @@ If you want to assemble a DBInterface object yourself, something like the follow
     // It is also a good idea to catch \Squirrel\Queries\DBException
     // in your application in case of a DB error so it
     // can be handled gracefully
+    
+DBInterface - low level interface
+---------------------------------
 
 ### SELECT queries
 
@@ -451,20 +481,194 @@ If you quote all identifiers, then changing database systems (where different re
 $rowsAffected = $db->change('UPDATE ' . $db->quoteIdentifier('users') . ' SET ' . $db->quoteIdentifier('first_name') . ')=? WHERE ' . $db->quoteIdentifier('user_id') . '=?', ['Sandra', 5]);
 ```
 
-Guideline to use this library
------------------------------
+DBBuilderInterface - higher level query builder
+-----------------------------------------------
+
+DBBuilderInterface offers the following functions:
+
+- count
+- select
+- insert
+- update
+- insertOrUpdate (= UPSERT)
+- delete
+- transaction (to do a function within a transaction)
+- getDBInterface (to get the underlying DBInterface object)
+
+All except the last two return a builder object which helps you easily create a query and get the results. Compared to DBInterface you do not have to remember what data can be contained in a structured query - your IDE will suggest whatever is available. You can also have a look at the builder objects themselves - they are all very short.
+
+It is almost easiest to just try it out yourself - in the background DBBuilder converts the query into a structured query to pass to DBInterface.
+
+There are some examples below for each of the 6 builder functions:
+
+### Count
+
+```php
+$usersNumber = $dbBuilder
+    ->count()
+    ->inTables([
+        'users u',
+        'users_addresses a',
+    ])
+    ->where([
+        ':u.userId: = :a.userId:',
+        'u.zipCode' => 33769,
+    ])
+    ->getNumber();
+```
+
+An easy way to just count the number of rows
+
+### Select
+
+```php
+$userResults = $dbBuilder
+    ->select()
+    ->fields([
+        'u.userId',
+        'name' => 'a.firstName',
+    ])
+    ->inTables([
+        'users u',
+        'users_addresses a',
+    ])
+    ->where([
+        ':u.userId: = :a.userId:',
+        'u.zipCode' => 33769,
+    ])
+    ->groupBy([
+        'u.userId',
+    ])
+    ->orderBy([
+        'u.createDate',
+    ])
+    ->limitTo(3)
+    ->startAt(0)
+    ->blocking()
+    ->getAllEntries();
+```
+
+Select queries can become the most complex, so they have many options - above you can see all of them, except for the last call, where you have different options:
+
+- getAllEntries, to retrieve an array with all the entries at once
+- getOneEntry, to just get exactly one entry
+- getIterator, to get an object you can iterate over (foreach) so you can get one result after the other
+- getFlattenedFields, which means the results are "flattened"
+
+getFlattenedFields can be useful for something like this:
+
+```php
+$userIds = $dbBuilder
+    ->select()
+    ->field('userId')
+    ->inTable('users')
+    ->where([
+        'u.zipCode' => 33769,
+    ])
+    ->getFlattenedFields();
+```
+
+Instead of a list of arrays each with a field "userId", the results are flattened and directly return a list of user IDs. Flattening is mostly useful for IDs or other simple lists of values, where you just need one array instead of an array of an array.
+
+### Insert
+
+```php
+$newUserId = $dbBuilder
+    ->insert()
+    ->inTable('users')
+    ->set([
+      'userName' => 'Kjell',
+    ])
+    ->writeAndReturnNewId();
+```
+
+You can use `writeAndReturnNewId` if you are expecting/needing an insert ID, or just `write` to insert the entry without a return value.
+
+### Update
+
+```php
+$rowsAffected = $dbBuilder
+    ->update()
+    ->inTables([
+        'users',
+    ])
+    ->set([
+        'lastLoginDate' => time(),
+        ':visits: = :visits: + 1',
+    ])
+    ->where([
+        'userId' => 33,
+    ])
+    ->limitTo(1)
+    ->writeAndReturnAffectedNumber();
+```
+
+You can use `writeAndReturnAffectedNumber` if you are interested in the number of affected/changed rows, or `write` if you do not need that information. Another optionsnot shown above is `orderBy`.
+
+### Insert or Update
+
+This makes the UPSERT functionality in DBInterface a bit easier to digest, using the same information:
+
+```php
+$result = $insertBuilder
+    ->insertOrUpdate()
+    ->inTable('users')
+    ->set([
+        'userId',
+        'firstName' => 'Annemarie',
+        'visits' => 1,
+    ])
+    ->index([
+        'userId',
+    ])
+    ->setOnUpdate([
+        ':visits: = :visits: + 1',
+    ])
+    ->writeAndReturnWhatHappened();
+```
+
+`writeAndReturnWhatHappened` returns either "insert", "update" or an empty string "" - this represents what the database did, if a row was inserted, if an existing row was updated, or if nothing happened because the row data was already identical to the query data. You can use `write` if you are not interested in the query result.
+
+### Delete
+
+```php
+$rowsAffected = $dbBuilder
+    ->delete()
+    ->inTable('users')
+    ->where([
+        'userId' => 33,
+    ])
+    ->writeAndReturnAffectedNumber();
+```
+
+You can use `writeAndReturnAffectedNumber` if you are interested in the number of affected/changed rows, or `write` if you do not need that information.
+
+### Transaction
+
+The transaction function works the same as the one in DBInterface - in fact, DBBuilderInterface just passes it as-is to DBInterface.
+
+Guidelines to use this library
+------------------------------
 
 To use this library to its fullest it is recommended to follow these guidelines:
 
+### Use DBBuilderInterface - or structured queries
+
+The easiest and safest option is to use the builder (DBBuilderInterface) - with an IDE you will have an easy time completing your queries while separating the query from the data is very easy and almost automatic.
+
+If you want to use DBInterface instead, use structured SELECT and UPDATE queries, as they are easier to write and read and make separating the query from the data easier, while still containing basically the same information as a "pure" string query, so use them instead of writing SQL queries on your own.
+
+INSERT, UPSERT und DELETE queries are already structured because their focus is limited. With these five query types you should be able to handle 99% of queries.
+
 ### Always separate the query from the data
 
-Instead of doing a query like this:
+For your application security, separating the query from the data is very important / helpful. Instead of doing a query like this:
 
 ```php
 $rowsAffected = $db->change('UPDATE sessions SET time_zone = \'Europe/Zurich\' WHERE session_id = \'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV\'');
 ```
 
-Do it like this: (or use a structured query, see the next tip!)
+Do it like this: (or use a structured query, see the tip above!)
 
 ```php
 $rowsAffected = $db->update('UPDATE sessions SET time_zone = ? WHERE session_id = ?', [
@@ -479,12 +683,6 @@ There are many advantages to separating the query from its data:
 2. Using ? placeholders is much easier than quoting/escaping data, and it does not matter if the data is a string or an int or something else
 3. Queries become shorter and more readable
 4. Using a different database system becomes easier, as you might use `"` to wrap strings in MySQL, while you would use `'` in PostgreSQL (`"` is used for identifiers). If you use ? placeholders you do not need to use any type of quotes for the data, so your queries become more universal.
-
-### Use structured queries
-
-Structured SELECT and UPDATE queries are easier to write and read and make separating the query from the data easier, while still containing basically the same information as a "pure" string query, so use them instead of writing SQL queries on your own.
-
-INSERT, UPSERT und DELETE queries are already structured because their focus is limited. With these five query types you should be able to handle 99% of queries.
 
 ### Use simple queries
 
