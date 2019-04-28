@@ -517,7 +517,7 @@ $usersNumber = $dbBuilder
     ->getNumber();
 ```
 
-An easy way to just count the number of rows
+An easy way to just count the number of rows.
 
 ### Select
 

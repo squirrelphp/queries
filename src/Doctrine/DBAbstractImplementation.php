@@ -90,7 +90,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Convert structured query into a string query with variables
         if (is_array($query)) {
-            $flattenFields = \boolval($query['flattenFields'] ?? false);
+            $query['flattenFields'] = false; // flatten fields is only supported by fetchAll
             [$query, $vars] = $this->convertStructuredSelectToQuery($query);
         }
 
@@ -99,7 +99,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $statement->execute($vars);
 
         // Return select query object with PDO statement
-        return new DBSelectQuery($statement, (isset($flattenFields) && $flattenFields === true ? true : false));
+        return new DBSelectQuery($statement);
     }
 
     /**
@@ -118,11 +118,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Get the result - can be an array of the entry, or false if it is empty
         $result = $selectQuery->getStatement()->fetch(FetchMode::ASSOCIATIVE);
-
-        // Flatten results means we get rid of the field names
-        if ($selectQuery->hasFlattenFields() === true && is_array($result)) {
-            return \array_values($result);
-        }
 
         // Return one result as an array
         return ($result === false ? null : $result);
@@ -186,18 +181,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // We flatten the fields if requested
         if (isset($flattenFields) && $flattenFields === true && count($result) > 0) {
-            // New flattened array
-            $list = [];
-
-            // Go through results and reduce the array to just a list of column values
-            foreach ($result as $entryKey => $entryArray) {
-                foreach ($entryArray as $fieldName => $fieldValue) {
-                    $list[] = $fieldValue;
-                }
-            }
-
-            // Returned flattened results
-            return $list;
+            return $this->flattenResults($result);
         }
 
         // Return query result
@@ -304,6 +288,22 @@ abstract class DBAbstractImplementation implements DBRawInterface
     public function quoteIdentifier(string $identifier): string
     {
         return $this->connection->quoteIdentifier($identifier);
+    }
+
+    private function flattenResults(array $results)
+    {
+        // New flattened array
+        $list = [];
+
+        // Go through results and reduce the array to just a list of column values
+        foreach ($results as $entryKey => $entryArray) {
+            foreach ($entryArray as $fieldName => $fieldValue) {
+                $list[] = $fieldValue;
+            }
+        }
+
+        // Returned flattened results
+        return $list;
     }
 
     private function convertStructuredSelectToQuery(array $select): array
