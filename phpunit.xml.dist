@@ -18,6 +18,7 @@
             <directory suffix=".php">src</directory>
             <exclude>
                 <directory>src/TestHelpers</directory>
+                <directory>src/DBDebug.php</directory>
             </exclude>
         </whitelist>
     </filter>

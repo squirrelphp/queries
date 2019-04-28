@@ -32,6 +32,12 @@ class DBDebug
 
         // Go through backtrace and find the topmost caller
         foreach ($backtraceList as $backtrace) {
+            // We are only going through classes - this is necessary because of
+            // helper functions like array_map, which otherwise come up in the backtrace
+            if (!isset($backtrace['class'])) {
+                continue;
+            }
+
             // Replace backtrace instance if we find a valid class insance
             foreach ($backtraceClasses as $backtraceClass) {
                 // Check if the class or interface we are looking for is implemented or used
