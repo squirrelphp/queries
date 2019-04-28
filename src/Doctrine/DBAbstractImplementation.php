@@ -146,11 +146,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
      */
     public function fetchOne($query, array $vars = []): ?array
     {
-        // Convert structured query into a string query with variables
-        if (is_array($query)) {
-            $query['limit'] = 1;
-        }
-
         // Use our internal functions to not repeat ourselves
         $selectQuery = $this->select($query, $vars);
         $result = $this->fetch($selectQuery);

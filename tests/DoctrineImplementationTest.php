@@ -871,7 +871,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
-            'FROM "blobs"."aa_stats_user_agents" WHERE "user_agent_hash"=? LIMIT 1';
+            'FROM "blobs"."aa_stats_user_agents" WHERE "user_agent_hash"=?';
         $vars = ['Mozilla'];
 
         // Structured query to test
@@ -1063,7 +1063,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'AND "c"."create_date"=? ' .
             'AND "s"."domain"=? ' .
             'AND ("s"."user_id" <= 0) ' .
-            'LIMIT 1 FOR UPDATE';
+            'FOR UPDATE';
         $vars = [5, 'aagdhf', 13, 19, 'example.com'];
 
         // Structured query to test
@@ -1145,8 +1145,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'AND "s"."session_start"=? ' .
             'AND "c"."create_date"=? ' .
             'AND "s"."domain"=? ' .
-            'AND (s.user_id <= 0) ' .
-            'LIMIT 1';
+            'AND (s.user_id <= 0)';
         $vars = [5, 'aagdhf', 13, 19, 'example.com'];
 
         // Structured query to test
