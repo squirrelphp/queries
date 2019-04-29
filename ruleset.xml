@@ -10,7 +10,6 @@
     <rule ref="SlevomatCodingStandard.ControlStructures.AssignmentInCondition"/>
     <rule ref="SlevomatCodingStandard.ControlStructures.DisallowContinueWithoutIntegerOperandInSwitch"/>
     <rule ref="SlevomatCodingStandard.ControlStructures.DisallowEmpty"/>
-    <rule ref="SlevomatCodingStandard.Classes.UnusedPrivateElements"/>
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
         <properties>
             <property name="searchAnnotations" value="true"/>

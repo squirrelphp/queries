@@ -10,25 +10,17 @@ use Squirrel\Queries\DBSelectQueryInterface;
  */
 class SelectIterator implements \Iterator
 {
+    use SelectIteratorTrait;
+
     /**
      * @var DBInterface
      */
-    private $db;
-
-    /**
-     * @var array SELECT query to execute
-     */
-    private $query = [];
+    private $source;
 
     /**
      * @var DBSelectQueryInterface|null
      */
     private $selectReference;
-
-    /**
-     * @var int
-     */
-    private $position = -1;
 
     /**
      * @var array|null
@@ -37,49 +29,7 @@ class SelectIterator implements \Iterator
 
     public function __construct(DBInterface $db, array $query)
     {
-        $this->db = $db;
+        $this->source = $db;
         $this->query = $query;
-    }
-
-    public function current()
-    {
-        return $this->lastResult;
-    }
-
-    public function next()
-    {
-        if (isset($this->selectReference)) {
-            $this->lastResult = $this->db->fetch($this->selectReference);
-            $this->position++;
-        }
-    }
-
-    public function key()
-    {
-        return $this->position;
-    }
-
-    public function valid()
-    {
-        return ( $this->lastResult === null ? false : true );
-    }
-
-    public function rewind()
-    {
-        $this->clear();
-
-        $this->selectReference = $this->db->select($this->query);
-
-        $this->next();
-    }
-
-    public function clear()
-    {
-        if (isset($this->selectReference)) {
-            $this->db->clear($this->selectReference);
-        }
-        $this->position = -1;
-        $this->selectReference = null;
-        $this->lastResult = null;
     }
 }

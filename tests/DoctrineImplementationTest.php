@@ -1820,6 +1820,25 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
+    public function testConvertToSelectSQLStringInvalidOptionFlattenFieldsNoBool()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        // Try it with the invalid option
+        $this->db->fetchAll([
+            'fields' => [
+                'boringfield',
+            ],
+            'tables' => [
+                'blobs.aa_sexy',
+            ],
+            'where' => [
+                'blabla' => 5,
+            ],
+            'flattenFields' => 4,
+        ]);
+    }
+
     public function testConvertToSelectSQLStringInvalidOptionFieldAndFields()
     {
         $this->expectException(DBInvalidOptionException::class);

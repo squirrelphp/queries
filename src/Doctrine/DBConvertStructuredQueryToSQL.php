@@ -59,9 +59,8 @@ class DBConvertStructuredQueryToSQL
             // Make sure the variable type for the defined option is valid
             switch ($optKey) {
                 case 'lock':
-                case 'flattenFields':
                     // Conversion of value does not match the original value, so we have a very wrong type
-                    if (!\is_bool($optVal) && \intval(\boolval($optVal)) !== \intval($optVal)) {
+                    if (!\is_bool($optVal) && $optVal !== 1 && $optVal !== 0) {
                         throw DBDebug::createException(
                             DBInvalidOptionException::class,
                             DBInterface::class,

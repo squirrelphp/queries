@@ -90,7 +90,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Convert structured query into a string query with variables
         if (is_array($query)) {
-            $query['flattenFields'] = false; // flatten fields is only supported by fetchAll
             [$query, $vars] = $this->convertStructuredSelectToQuery($query);
         }
 
@@ -162,7 +161,10 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Convert structured query into a string query with variables
         if (is_array($query)) {
-            $flattenFields = \boolval($query['flattenFields'] ?? false);
+            $flattenFields = $this->getFlattenFieldsOption($query['flattenFields'] ?? false);
+            if (isset($query['flattenFields'])) {
+                unset($query['flattenFields']);
+            }
             [$query, $vars] = $this->convertStructuredSelectToQuery($query);
         }
 
@@ -285,6 +287,18 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $this->connection->quoteIdentifier($identifier);
     }
 
+    private function getFlattenFieldsOption($flattenFields)
+    {
+        if (!\is_bool($flattenFields) && $flattenFields !== 1 && $flattenFields !== 0) {
+            throw DBDebug::createException(
+                DBInvalidOptionException::class,
+                DBInterface::class,
+                'flattenFields set to a non-boolean value: ' . DBDebug::sanitizeData($flattenFields)
+            );
+        }
+        return \boolval($flattenFields);
+    }
+
     private function flattenResults(array $results)
     {
         // New flattened array
@@ -313,7 +327,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
             'limit' => 0,
             'offset' => 0,
             'lock' => false,
-            'flattenFields' => false,
         ], $select);
 
         // Generate field select SQL (between SELECT and FROM)

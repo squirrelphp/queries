@@ -186,7 +186,7 @@ This would be aquivalent to this string SELECT query (when using MySQL):
 $selectStatement = $db->select('SELECT `fufumama`,`b`.`lalala`,`a`.`setting_value` AS "result",(`a`.`setting_value`+`b`.`blabla_value`) AS "result2" FROM `blobs`.`aa_sexy` `a`,`blobs`.`aa_blubli` `b` LEFT JOIN `blobs`.`aa_blubla` `c` ON (`c`.`field` = `b`.`field5` AND `b`.`sexy` = ?) WHERE (`a`.`field` = `b`.`field`) AND `setting_id`=? AND `boring_field_name` IN (?,?,?,?) AND (`setting_value` = ? OR `setting_value2` = ?) GROUP BY `a`.`field` ORDER BY `a`.`field` DESC LIMIT 10 OFFSET 5 FOR UPDATE', [5,'orders_xml_override',5,3,8,13,'one','two']);
 ```
 
-Important parts of how the conversion works:
+#### Important conversion details:
 
 - If an expression contains something like :fieldname: it is assumed that it is a field or table name which will then be escaped. For simple WHERE restrictions or fields definitions field names are escaped automatically.
 - You can use "field" if there is just one field, or "fields" for multiple fields. The same with "table" and "tables".
@@ -497,9 +497,7 @@ DBBuilderInterface offers the following functions:
 
 All except the last two return a builder object which helps you easily create a query and get the results. Compared to DBInterface you do not have to remember what data can be contained in a structured query - your IDE will suggest whatever is available. You can also have a look at the builder objects themselves - they are all very short.
 
-It is almost easiest to just try it out yourself - in the background DBBuilder converts the query into a structured query to pass to DBInterface.
-
-There are some examples below for each of the 6 builder functions:
+Looking at some examples should make the usage quite clear - here are some for each of the 6 builder functions:
 
 ### Count
 
@@ -520,6 +518,42 @@ $usersNumber = $dbBuilder
 An easy way to just count the number of rows.
 
 ### Select
+
+Select queries can become the most complex, so they have many options - here is an example with all of them (many are optional though!):
+
+```php
+$selectQuery = $dbBuilder
+    ->select()
+    ->fields([
+        'u.userId',
+        'name' => 'a.firstName',
+    ])
+    ->inTables([
+        'users u',
+        'users_addresses a',
+    ])
+    ->where([
+        ':u.userId: = :a.userId:',
+        'u.zipCode' => 33769,
+    ])
+    ->groupBy([
+        'u.userId',
+    ])
+    ->orderBy([
+        'u.createDate',
+    ])
+    ->limitTo(3)
+    ->startAt(0)
+    ->blocking();
+    
+foreach ($selectQuery as $result) {
+    echo $result['userId'] . ' => ' . $result['name'];
+}
+```
+
+The above query takes advantage that each SELECT query builder can be iterated over. As soon as the foreach loop starts the query is executed and one entry after the other is retrieved.
+
+If you want to retrieve all results at once (because you know you need them anyway), this is another option:
 
 ```php
 $userResults = $dbBuilder
@@ -546,16 +580,53 @@ $userResults = $dbBuilder
     ->startAt(0)
     ->blocking()
     ->getAllEntries();
+    
+foreach ($userResults as $result) {
+    echo $result['userId'] . ' => ' . $result['name'];
+}
 ```
 
-Select queries can become the most complex, so they have many options - above you can see all of them, except for the last call, where you have different options:
+Or if you only need one entry:
 
-- getAllEntries, to retrieve an array with all the entries at once
-- getOneEntry, to just get exactly one entry
-- getIterator, to get an object you can iterate over (foreach) so you can get one result after the other
-- getFlattenedFields, which means the results are "flattened"
+```php
+$result = $dbBuilder
+    ->select()
+    ->fields([
+        'u.userId',
+        'name' => 'a.firstName',
+    ])
+    ->inTables([
+        'users u',
+        'users_addresses a',
+    ])
+    ->where([
+        ':u.userId: = :a.userId:',
+        'u.zipCode' => 33769,
+    ])
+    ->groupBy([
+        'u.userId',
+    ])
+    ->orderBy([
+        'u.createDate',
+    ])
+    ->limitTo(3)
+    ->startAt(0)
+    ->blocking()
+    ->getOneEntry();
+    
+echo $result['userId'] . ' => ' . $result['name'];
+```
 
-getFlattenedFields can be useful for something like this:
+Note that you can use `field` instead of `fields` and `inTable` instead of `inTables` if you want to pass only one value (as a string), and that you can pass a string to `groupBy` and `orderBy` if you only want to use one string value.
+
+There are four options to get the data from a select query builder:
+
+- **getIterator**, to get an object you can iterate over (foreach) so you can get one result after the other - this is implicitely used in the first example by putting the builder into the foreach loop, as the builder implements IteratorAggregate
+- **getAllEntries**, to retrieve an array with all the entries at once, which was the second example
+- **getOneEntry**, to just get exactly one entry, used in the third example
+- **getFlattenedFields**, which means the results are "flattened"
+
+`getFlattenedFields` can be useful for something like this:
 
 ```php
 $userIds = $dbBuilder
@@ -566,6 +637,10 @@ $userIds = $dbBuilder
         'u.zipCode' => 33769,
     ])
     ->getFlattenedFields();
+    
+foreach ($userIds as $userId) {
+    // Do something which each $userId here
+}
 ```
 
 Instead of a list of arrays each with a field "userId", the results are flattened and directly return a list of user IDs. Flattening is mostly useful for IDs or other simple lists of values, where you just need one array instead of an array of an array.
@@ -573,7 +648,7 @@ Instead of a list of arrays each with a field "userId", the results are flattene
 ### Insert
 
 ```php
-$newUserId = $dbBuilder
+$newUserIdFromDatabase = $dbBuilder
     ->insert()
     ->inTable('users')
     ->set([
@@ -603,7 +678,7 @@ $rowsAffected = $dbBuilder
     ->writeAndReturnAffectedNumber();
 ```
 
-You can use `writeAndReturnAffectedNumber` if you are interested in the number of affected/changed rows, or `write` if you do not need that information. Another optionsnot shown above is `orderBy`.
+You can use `writeAndReturnAffectedNumber` if you are interested in the number of affected/changed rows, or `write` if you do not need that information. Another option which is not shown above is `orderBy`.
 
 ### Insert or Update
 
@@ -646,6 +721,67 @@ You can use `writeAndReturnAffectedNumber` if you are interested in the number o
 ### Transaction
 
 The transaction function works the same as the one in DBInterface - in fact, DBBuilderInterface just passes it as-is to DBInterface.
+
+### General syntax rules
+
+For simple column names to values within any queries, you can just use the name to value syntax like you do in PHP:
+
+```php
+$user = $dbBuilder
+    ->select()
+    ->inTable('users')
+    ->where([
+        'user_id' => $userId, // user_id must be equal to $userId
+    ])
+    ->getOneEntry();
+    
+// $user now contains all table column and values:
+echo $user['user_id'];
+```
+
+The values are separated from the query to ensure safety, and the table names and column names are quoted for you.
+
+If you want to use more complex expressions, you are free to do so:
+
+```php
+$user = $dbBuilder
+    ->select()
+    ->inTable('users')
+    ->where([
+        ':user_id: BETWEEN ? AND ?' => [15, 55],
+        ':create_date: > ?' => time() - 86400,
+    ])
+    ->getOneEntry();
+```
+
+In these cases make sure to surround all table column names / field names and table names with colons, so the library can escape them. You can use any SQL syntax you want, and each entry in a WHERE clause is connected by AND - so the WHERE part is converted to the following by the library:
+
+```sql
+... WHERE (`user_id` BETWEEN ? AND ?) AND (`create_date` > ?) ...
+```  
+
+For custom expressions every expression is surrounded by brackets, to make sure they do not influence each other, and the parameters are sent separately from the query, in this case: `[15, 55, time() - 86400]`
+
+This syntax is used consistently for any data passed to the library, and where that type of syntax can be translated to valid SQL. So an UPDATE query could look like this:
+
+```php
+$rowsAffected = $dbBuilder
+    ->update()
+    ->inTable('users')
+    ->set([
+        'last_login_date' => time(),
+        ':visits: = :visits: + 1',
+        ':full_name: = CONCAT(:first_name:,:last_name:)',
+        ':balance: = :balance: + ?' => $balanceIncrease,
+    ])
+    ->where([
+        'user_id' => 33,
+        ':last_login_date: < ?' => time()-86400,
+    ])
+    ->writeAndReturnAffectedNumber();
+```
+
+This should make it easy to read and write queries, even if you don't know much SQL, and you don't have to think about separating the query and the parameters yourself - the library is doing it for you.
 
 Guidelines to use this library
 ------------------------------
