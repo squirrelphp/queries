@@ -7,7 +7,7 @@ use Squirrel\Queries\DBInterface;
 /**
  * Select query builder as a fluent object - build query and return entries or flattened fields
  */
-class SelectEntries
+class SelectEntries implements \IteratorAggregate
 {
     /**
      * @var DBInterface
