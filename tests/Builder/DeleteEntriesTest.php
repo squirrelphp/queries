@@ -31,7 +31,7 @@ class DeleteEntriesTest extends \PHPUnit\Framework\TestCase
             ->andReturn($expectedResult);
 
         $deleteBuilder
-            ->confirmDeleteAll()
+            ->confirmNoWhereRestrictions()
             ->write();
 
         $this->assertTrue(true);
@@ -50,7 +50,7 @@ class DeleteEntriesTest extends \PHPUnit\Framework\TestCase
             ->andReturn($expectedResult);
 
         $results = $deleteBuilder
-            ->confirmDeleteAll()
+            ->confirmNoWhereRestrictions()
             ->writeAndReturnAffectedNumber();
 
         $this->assertSame($expectedResult, $results);

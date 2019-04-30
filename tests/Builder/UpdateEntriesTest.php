@@ -4,6 +4,7 @@ namespace Squirrel\Queries\Tests\Builder;
 
 use Squirrel\Queries\Builder\UpdateEntries;
 use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
 {
@@ -35,7 +36,9 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
             ])
             ->andReturn($expectedResult);
 
-        $updateBuilder->write();
+        $updateBuilder
+            ->confirmNoWhereRestrictions()
+            ->write();
 
         $this->assertTrue(true);
     }
@@ -58,7 +61,9 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
             ])
             ->andReturn($expectedResult);
 
-        $results = $updateBuilder->writeAndReturnAffectedNumber();
+        $results = $updateBuilder
+            ->confirmNoWhereRestrictions()
+            ->writeAndReturnAffectedNumber();
 
         $this->assertSame($expectedResult, $results);
     }
@@ -157,5 +162,28 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
             ->writeAndReturnAffectedNumber();
 
         $this->assertSame($expectedResult, $results);
+    }
+
+    public function testNoWhereNoConfirmation()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $updateBuilder = new UpdateEntries($this->db);
+
+        $expectedResult = 33;
+
+        $this->db
+            ->shouldReceive('update')
+            ->once()
+            ->with([
+                'tables' => [],
+                'changes' => [],
+                'where' => [],
+                'order' => [],
+                'limit' => 0,
+            ])
+            ->andReturn($expectedResult);
+
+        $updateBuilder->write();
     }
 }

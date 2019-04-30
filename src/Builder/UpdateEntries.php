@@ -2,7 +2,9 @@
 
 namespace Squirrel\Queries\Builder;
 
+use Squirrel\Queries\DBDebug;
 use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 /**
  * Update query builder as a fluent object - build query and execute it
@@ -38,6 +40,11 @@ class UpdateEntries
      * @var int How many results should be returned
      */
     private $limitTo = 0;
+
+    /**
+     * @var bool We need to confirmation before we execute a query without WHERE restriction
+     */
+    private $confirmNoWhere = false;
 
     public function __construct(DBInterface $db)
     {
@@ -87,6 +94,12 @@ class UpdateEntries
         return $this;
     }
 
+    public function confirmNoWhereRestrictions(): self
+    {
+        $this->confirmNoWhere = true;
+        return $this;
+    }
+
     /**
      * Write changes to database
      */
@@ -102,6 +115,16 @@ class UpdateEntries
      */
     public function writeAndReturnAffectedNumber(): int
     {
+        // Make sure there is no accidental "delete everything"
+        if (\count($this->where) === 0 && $this->confirmNoWhere !== true) {
+            throw DBDebug::createException(
+                DBInvalidOptionException::class,
+                [self::class],
+                'No restricting "where" arguments defined for UPDATE' .
+                'and no override confirmation with "confirmNoWhereRestrictions" call'
+            );
+        }
+
         return $this->db->update([
             'tables' => $this->tables,
             'changes' => $this->changes,
