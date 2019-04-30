@@ -4,6 +4,7 @@ namespace Squirrel\Queries\Tests\Builder;
 
 use Squirrel\Queries\Builder\DeleteEntries;
 use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 class DeleteEntriesTest extends \PHPUnit\Framework\TestCase
 {
@@ -29,7 +30,9 @@ class DeleteEntriesTest extends \PHPUnit\Framework\TestCase
             ->with('', [])
             ->andReturn($expectedResult);
 
-        $deleteBuilder->write();
+        $deleteBuilder
+            ->confirmDeleteAll()
+            ->write();
 
         $this->assertTrue(true);
     }
@@ -46,7 +49,9 @@ class DeleteEntriesTest extends \PHPUnit\Framework\TestCase
             ->with('', [])
             ->andReturn($expectedResult);
 
-        $results = $deleteBuilder->writeAndReturnAffectedNumber();
+        $results = $deleteBuilder
+            ->confirmDeleteAll()
+            ->writeAndReturnAffectedNumber();
 
         $this->assertSame($expectedResult, $results);
     }
@@ -75,5 +80,22 @@ class DeleteEntriesTest extends \PHPUnit\Framework\TestCase
             ->writeAndReturnAffectedNumber();
 
         $this->assertSame($expectedResult, $results);
+    }
+
+    public function testNoWhereNoConfirmation()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $deleteBuilder = new DeleteEntries($this->db);
+
+        $expectedResult = 33;
+
+        $this->db
+            ->shouldReceive('delete')
+            ->once()
+            ->with('', [])
+            ->andReturn($expectedResult);
+
+        $deleteBuilder->write();
     }
 }
