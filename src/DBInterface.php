@@ -86,31 +86,31 @@ interface DBInterface
      *
      * @param string $tableName Name of the table
      * @param array $row Name and value pairs to insert into the table
-     * @return int Number of affected rows by the insert (usually 1)
+     * @param string $autoIncrementIndex Index of an automatically generated value that should be returned
+     * @return string|null If $autoIncrementIndex is empty, return null, otherwise return the auto increment value
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function insert(string $tableName, array $row = []): int;
+    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string;
 
     /**
      * Insert a new entry or update existing entry (also called UPSERT: update-or-insert)
      * in one atomic operation, called MERGE query in ANSI SQL
      *
-     * The actual implementation/query is very different depending on the database:
+     * The actual implementation/query is different depending on the database:
      *
      * MySQL: INSERT INTO ... ON DUPLICATE KEY UPDATE ...
-     * Postgres: INSERT INTO ... ON CONFLICT(column_names) UPDATE ... WHERE ...
+     * Postgres & SQLite: INSERT INTO ... ON CONFLICT(column_names) DO UPDATE ... WHERE ...
      * Others/ANSI: MERGE (see https://en.wikipedia.org/wiki/Merge_(SQL))
      *
      * @param string $tableName Name of the table
      * @param array $row Row to insert, keys are column names, values are the data
      * @param string[] $indexColumns Index columns which encompass the unique index
-     * @param array $rowUpdates Fields to update if entry already exists
-     * @return int 1 if a row was inserted, 2 if a row was updated, and 0 if there was no change
+     * @param array|null $rowUpdates Fields to update if entry already exists, default is all non-index field entries
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function upsert(string $tableName, array $row = [], array $indexColumns = [], array $rowUpdates = []): int;
+    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void;
 
     /**
      * Execute an update query and return number of affected rows
@@ -145,16 +145,6 @@ interface DBInterface
     public function change(string $query, array $vars = []): int;
 
     /**
-     * Get last inserted ID from most recent insert query
-     *
-     * @param string|null $name
-     * @return string
-     *
-     * @throws DBException Common minimal exception thrown if anything goes wrong
-     */
-    public function lastInsertId($name = null): string;
-
-    /**
      * Quotes an identifier, like a table name or column name, so there is no risk
      * of overlap with a reserved keyword
      *
@@ -162,4 +152,12 @@ interface DBInterface
      * @return string
      */
     public function quoteIdentifier(string $identifier): string;
+
+    /**
+     * Get connection object for low-level access when there is no other way of solving something - should
+     * rarely be necessary
+     *
+     * @return object
+     */
+    public function getConnection(): object;
 }

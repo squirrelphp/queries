@@ -84,27 +84,6 @@ class InsertOrUpdateEntry
      */
     public function write(): void
     {
-        $this->db->upsert($this->table, $this->values, $this->index, $this->valuesOnUpdate);
-    }
-
-    /**
-     * Write changes to database and return the operation that happened in the database:
-     *
-     * "insert": Entry was inserted
-     * "update": Existing entry was updated
-     * "":       Nothing changed, existing entry was already up-to-date
-     *
-     * @return string Either returns "insert", "update" or "" to indicate what operation happened
-     */
-    public function writeAndReturnWhatHappened(): string
-    {
-        switch (\intval($this->db->upsert($this->table, $this->values, $this->index, $this->valuesOnUpdate))) {
-            case 1:
-                return 'insert';
-            case 2:
-                return 'update';
-        }
-
-        return '';
+        $this->db->insertOrUpdate($this->table, $this->values, $this->index, $this->valuesOnUpdate);
     }
 }

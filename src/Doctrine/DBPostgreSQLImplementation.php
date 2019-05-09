@@ -2,9 +2,9 @@
 
 namespace Squirrel\Queries\Doctrine;
 
-use Squirrel\Queries\DBDebug;
-use Squirrel\Queries\DBInterface;
-use Squirrel\Queries\Exception\DBInvalidOptionException;
+use Doctrine\DBAL\Connection;
+use Squirrel\Queries\DBSelectQueryInterface;
+use Squirrel\Queries\LargeObject;
 
 /**
  * DB Postgres implementation using Doctrine DBAL with custom upsert functionality
@@ -14,58 +14,114 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
     /**
      * @inheritDoc
      */
-    public function upsert(string $tableName, array $row = [], array $indexColumns = [], array $rowUpdates = []): int
+    public function fetch(DBSelectQueryInterface $selectQuery): ?array
     {
-        // No table name specified
-        if (strlen($tableName) === 0) {
-            throw DBDebug::createException(
-                DBInvalidOptionException::class,
-                DBInterface::class,
-                'No table name specified for upsert'
-            );
+        $result = parent::fetch($selectQuery);
+
+        if (isset($result)) {
+            $result = $this->replaceResourceWithString($result);
         }
 
-        // No insert row specified
-        if (count($row) === 0) {
-            throw DBDebug::createException(
-                DBInvalidOptionException::class,
-                DBInterface::class,
-                'No insert data specified for upsert for table "' . $tableName . '"'
-            );
+        return $result;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function fetchOne($query, array $vars = []): ?array
+    {
+        $result = parent::fetchOne($query, $vars);
+
+        if (isset($result)) {
+            $result = $this->replaceResourceWithString($result);
         }
 
-        // No update fields defined, so we assume the table is changed the same way
-        // as with the insert
-        if (count($rowUpdates) === 0) {
-            // Copy over insert fields and values
-            $rowUpdates = $row;
+        return $result;
+    }
 
-            // Remove index fields for update
-            foreach ($indexColumns as $fieldName) {
-                unset($rowUpdates[$fieldName]);
+    /**
+     * @inheritDoc
+     */
+    public function fetchAll($query, array $vars = []): array
+    {
+        $results = parent::fetchAll($query, $vars);
+
+        $results = $this->replaceResourceWithString($results);
+
+        return $results;
+    }
+
+    private function replaceResourceWithString(array $result)
+    {
+        foreach ($result as $key => $value) {
+            if (\is_array($value)) {
+                $result[$key] = $this->replaceResourceWithString($value);
+            } elseif (\is_resource($value)) {
+                $result[$key] = \stream_get_contents($value);
             }
         }
+
+        return $result;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
+    {
+        [$query, $queryValues] = $this->generateUpsertSQLAndParameters($tableName, $row, $indexColumns, $rowUpdates);
+
+        /**
+         * @var Connection $connection
+         */
+        $connection = $this->getConnection();
+        $statement = $connection->prepare($query);
+
+        $paramCounter = 1;
+        foreach ($queryValues as $columnValue) {
+            if (\is_bool($columnValue)) {
+                $columnValue = \intval($columnValue);
+            }
+
+            $statement->bindValue(
+                $paramCounter++,
+                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+            );
+        }
+
+        $statement->execute();
+        $statement->closeCursor();
+    }
+
+    protected function generateUpsertSQLAndParameters(
+        string $tableName,
+        array $row = [],
+        array $indexColumns = [],
+        ?array $rowUpdates = null
+    ): array {
+        $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
+
+        $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Divvy up the field names, values and placeholders for the INSERT part
         $columnsForInsert = array_map([$this, 'quoteIdentifier'], array_keys($row));
         $placeholdersForInsert = array_fill(0, count($row), '?');
         $queryValues = array_values($row);
 
-        // No update, so just make a dummy update
-        if (count($rowUpdates) === 0) {
-            $updatePart = '1=1';
-        } else { // Generate update part of the query
-            [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($rowUpdates, $queryValues);
-        }
-
         // Generate the insert query
         $query = 'INSERT INTO ' . $this->quoteIdentifier($tableName) .
             ' (' . (count($columnsForInsert) > 0 ? implode(',', $columnsForInsert) : '') . ') ' .
             'VALUES (' . (count($columnsForInsert) > 0 ? implode(',', $placeholdersForInsert) : '') . ') ' .
-            'ON CONFLICT (' . implode(',', array_map([$this, 'quoteIdentifier'], $indexColumns)) . ') ' .
-            'DO UPDATE ' . $updatePart;
+            'ON CONFLICT (' . implode(',', array_map([$this, 'quoteIdentifier'], $indexColumns)) . ') ';
 
-        // Return 1 if a row was inserted, 2 if a row was updated, and 0 if there was no change
-        return $this->change($query, $queryValues);
+        if (count($rowUpdates) === 0) { // No updates, so insert or do nothing
+            $query .= 'DO NOTHING';
+        } else { // Generate update part of the query
+            [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($rowUpdates, $queryValues);
+            $query .= 'DO UPDATE SET ' . $updatePart;
+        }
+
+        return [$query, $queryValues];
     }
 }

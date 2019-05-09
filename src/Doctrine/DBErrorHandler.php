@@ -268,7 +268,7 @@ class DBErrorHandler implements DBRawInterface
     /**
      * @inheritDoc
      */
-    public function insert(string $tableName, array $row = []): int
+    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
@@ -276,9 +276,9 @@ class DBErrorHandler implements DBRawInterface
     /**
      * @inheritDoc
      */
-    public function upsert(string $tableName, array $row = [], array $indexColumns = [], array $rowUpdates = []): int
+    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
     {
-        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+        $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
     /**

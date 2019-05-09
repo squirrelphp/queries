@@ -52,11 +52,11 @@ class InsertEntry
     /**
      * Write changes to database and return new insert ID
      *
+     * @param string $autoIncrementIndex Column / field name for which an autoincrement ID should be returned
      * @return string Return new autoincrement insert ID from database
      */
-    public function writeAndReturnNewId(): string
+    public function writeAndReturnNewId(string $autoIncrementIndex = ''): string
     {
-        $this->db->insert($this->table, $this->values);
-        return $this->db->lastInsertId();
+        return $this->db->insert($this->table, $this->values, $autoIncrementIndex) ?? '';
     }
 }

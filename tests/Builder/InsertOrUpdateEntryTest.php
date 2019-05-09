@@ -24,7 +24,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $expectedResult = 33;
 
         $this->db
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->once()
             ->with('', [], [], []);
 
@@ -40,7 +40,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $expectedResult = 33;
 
         $this->db
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->once()
             ->with('someTTTable', [
                 'fieldName' => 33,
@@ -75,7 +75,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $expectedResult = 33;
 
         $this->db
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->once()
             ->with('someTTTable', [
                 'fieldName' => 33,
@@ -84,10 +84,9 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
                 'fieldName',
             ], [
                 'floaty' => 33,
-            ])
-            ->andReturn(1);
+            ]);
 
-        $result = $insertBuilder
+        $insertBuilder
             ->inTable('someTTTable')
             ->set([
                 'fieldName' => 33,
@@ -99,9 +98,9 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
             ->setOnUpdate([
                 'floaty' => 33,
             ])
-            ->writeAndReturnWhatHappened();
+            ->write();
 
-        $this->assertEquals('insert', $result);
+        $this->assertTrue(true);
     }
 
     public function testUpdateWithReturn()
@@ -111,7 +110,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $expectedResult = 33;
 
         $this->db
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->once()
             ->with('someTTTable', [
                 'fieldName' => 33,
@@ -120,10 +119,9 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
                 'fieldName',
             ], [
                 ':floaty: = :floaty: + 1'
-            ])
-            ->andReturn(2);
+            ]);
 
-        $result = $insertBuilder
+        $insertBuilder
             ->inTable('someTTTable')
             ->set([
                 'fieldName' => 33,
@@ -131,9 +129,9 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
             ])
             ->index('fieldName')
             ->setOnUpdate(':floaty: = :floaty: + 1')
-            ->writeAndReturnWhatHappened();
+            ->write();
 
-        $this->assertEquals('update', $result);
+        $this->assertTrue(true);
     }
 
     public function testNoChangeWithReturn()
@@ -143,7 +141,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $expectedResult = 33;
 
         $this->db
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->once()
             ->with('someTTTable', [
                 'fieldName' => 33,
@@ -153,9 +151,9 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
             ], [
                 ':floaty: = :floaty: + 1'
             ])
-            ->andReturn(0);
+            ->andReturn('update');
 
-        $result = $insertBuilder
+        $insertBuilder
             ->inTable('someTTTable')
             ->set([
                 'fieldName' => 33,
@@ -163,8 +161,8 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
             ])
             ->index('fieldName')
             ->setOnUpdate(':floaty: = :floaty: + 1')
-            ->writeAndReturnWhatHappened();
+            ->write();
 
-        $this->assertEquals('', $result);
+        $this->assertTrue(true);
     }
 }

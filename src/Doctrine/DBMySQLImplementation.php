@@ -2,9 +2,8 @@
 
 namespace Squirrel\Queries\Doctrine;
 
-use Squirrel\Queries\DBDebug;
-use Squirrel\Queries\DBInterface;
-use Squirrel\Queries\Exception\DBInvalidOptionException;
+use Doctrine\DBAL\Connection;
+use Squirrel\Queries\LargeObject;
 
 /**
  * DB MySQL implementation using Doctrine DBAL with custom upsert functionality
@@ -14,49 +13,26 @@ class DBMySQLImplementation extends DBAbstractImplementation
     /**
      * @inheritDoc
      */
-    public function upsert(string $tableName, array $row = [], array $indexColumns = [], array $rowUpdates = []): int
+    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
     {
-        // No table name specified
-        if (strlen($tableName) === 0) {
-            throw DBDebug::createException(
-                DBInvalidOptionException::class,
-                DBInterface::class,
-                'No table name specified for upsert'
-            );
-        }
+        $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
 
-        // No insert row specified
-        if (count($row) === 0) {
-            throw DBDebug::createException(
-                DBInvalidOptionException::class,
-                DBInterface::class,
-                'No insert data specified for upsert for table "' . $tableName . '"'
-            );
-        }
-
-        // No update fields defined, so we assume the table is changed the same way
-        // as with the insert
-        if (count($rowUpdates) === 0) {
-            // Copy over insert fields and values
-            $rowUpdates = $row;
-
-            // Remove index fields for update
-            foreach ($indexColumns as $fieldName) {
-                unset($rowUpdates[$fieldName]);
-            }
-        }
+        $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Divvy up the field names, values and placeholders for the INSERT part
         $columnsForInsert = array_map([$this, 'quoteIdentifier'], array_keys($row));
         $placeholdersForInsert = array_fill(0, count($row), '?');
         $queryValues = array_values($row);
 
-        // No update, so just make a dummy update
+        // No update, so just make a dummy update setting the unique index fields
         if (count($rowUpdates) === 0) {
-            $updatePart = '1=1';
-        } else { // Generate update part of the query
-            [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($rowUpdates, $queryValues);
+            foreach ($indexColumns as $fieldName) {
+                $rowUpdates[] = ':' . $fieldName . ':=:' . $fieldName . ':';
+            }
         }
+
+        // Generate update part of the query
+        [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($rowUpdates, $queryValues);
 
         // Generate the insert query
         $query = 'INSERT INTO ' . $this->quoteIdentifier($tableName) .
@@ -64,7 +40,26 @@ class DBMySQLImplementation extends DBAbstractImplementation
             'VALUES (' . (count($columnsForInsert) > 0 ? implode(',', $placeholdersForInsert) : '') . ') ' .
             'ON DUPLICATE KEY UPDATE ' . $updatePart;
 
-        // Return 1 if a row was inserted, 2 if a row was updated, and 0 if there was no change
-        return $this->change($query, $queryValues);
+        /**
+         * @var Connection $connection
+         */
+        $connection = $this->getConnection();
+        $statement = $connection->prepare($query);
+
+        $paramCounter = 1;
+        foreach ($queryValues as $columnValue) {
+            if (\is_bool($columnValue)) {
+                $columnValue = \intval($columnValue);
+            }
+
+            $statement->bindValue(
+                $paramCounter++,
+                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+            );
+        }
+
+        $statement->execute();
+        $statement->closeCursor();
     }
 }

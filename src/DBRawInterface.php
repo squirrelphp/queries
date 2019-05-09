@@ -19,13 +19,6 @@ interface DBRawInterface extends DBInterface
     public function setTransaction(bool $inTransaction): void;
 
     /**
-     * Get connection object for low-level access stuff
-     *
-     * @return object
-     */
-    public function getConnection(): object;
-
-    /**
      * Set DBRawInterface layer beneath the current class, in order to build layers
      * of classes implementing DBRawInterface and which serve different purposes
      *

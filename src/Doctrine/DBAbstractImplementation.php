@@ -9,6 +9,7 @@ use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBRawInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
+use Squirrel\Queries\LargeObject;
 
 /**
  * DB implementation using Doctrine DBAL without the upsert functionality,
@@ -188,7 +189,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     /**
      * @inheritDoc
      */
-    public function insert(string $tableName, array $row = []): int
+    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
         // No table name specified
         if (strlen($tableName) === 0) {
@@ -200,7 +201,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Make table name safe by quoting it
-        $tableName = $this->quoteIdentifier($tableName);
+        $tableNameQuoted = $this->quoteIdentifier($tableName);
 
         // Divvy up the field names, values and placeholders
         $columnNames = array_keys($row);
@@ -208,12 +209,34 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $placeholders = array_fill(0, count($row), '?');
 
         // Generate the insert query
-        $query = 'INSERT INTO ' . $tableName .
-            ' (' . (count($row) > 0 ? implode(',', array_map([$this, 'quoteIdentifier'], $columnNames)) : '') . ') ' .
+        $query = 'INSERT INTO ' . $tableNameQuoted . ' ' .
+            '(' . (count($row) > 0 ? implode(',', array_map([$this, 'quoteIdentifier'], $columnNames)) : '') . ') ' .
             'VALUES (' . (count($row) > 0 ? implode(',', $placeholders) : '') . ')';
 
-        // Return number of affected rows
-        return $this->change($query, $columnValues);
+        // Prepare and execute query
+        $statement = $this->connection->prepare($query);
+        $paramCounter = 1;
+        foreach ($columnValues as $columnValue) {
+            if (\is_bool($columnValue)) {
+                $columnValue = \intval($columnValue);
+            }
+
+            $statement->bindValue(
+                $paramCounter++,
+                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+            );
+        }
+        $statement->execute();
+        $statement->closeCursor();
+
+        // No autoincrement index - no insert ID return value needed
+        if (strlen($autoIncrementIndex) === 0) {
+            return null;
+        }
+
+        // Return autoincrement ID
+        return $this->connection->lastInsertId($tableName . '_' . $autoIncrementIndex . '_seq');
     }
 
     /**
@@ -259,7 +282,19 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Prepare and execute query
         $statement = $this->connection->prepare($query);
-        $statement->execute($vars);
+        $paramCounter = 1;
+        foreach ($vars as $columnValue) {
+            if (\is_bool($columnValue)) {
+                $columnValue = \intval($columnValue);
+            }
+
+            $statement->bindValue(
+                $paramCounter++,
+                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+            );
+        }
+        $statement->execute();
 
         // Get affected rows
         $result = $statement->rowCount();
@@ -269,14 +304,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Return affected rows
         return $result;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function lastInsertId($name = null): string
-    {
-        return $this->connection->lastInsertId($name);
     }
 
     /**
@@ -407,6 +434,116 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         return [$sql, $queryValues];
+    }
+
+    /**
+     * Emulate an UPSERT with an UPDATE and INSERT query wrapped in a transaction
+     *
+     * @param string $tableName Name of the table
+     * @param array $row Row to insert, keys are column names, values are the data
+     * @param string[] $indexColumns Index columns which encompass the unique index
+     * @param array $rowUpdates Fields to update if entry already exists
+     */
+    public function insertOrUpdateEmulation(
+        string $tableName,
+        array $row = [],
+        array $indexColumns = [],
+        ?array $rowUpdates = null
+    ) {
+        $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
+
+        $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
+
+        // Do all queries in a transaction to correctly emulate the UPSERT
+        $this->transaction(function ($tableName, $row, $indexColumns, $rowUpdates) {
+            // Contains all WHERE restrictions for the UPDATE query
+            $whereForUpdate = [];
+
+            // Assign all row values of index fields to the WHERE restrictions
+            foreach ($indexColumns as $indexColumn) {
+                $whereForUpdate[$indexColumn] = $row[$indexColumn];
+            }
+
+            // No update, so just make a dummy update setting the unique index fields
+            if (count($rowUpdates) === 0) {
+                foreach ($indexColumns as $fieldName) {
+                    $rowUpdates[] = ':' . $fieldName . ':=:' . $fieldName . ':';
+                }
+            }
+
+            // Execute UPDATE query and get affected rows
+            $rowsAffected = $this->update([
+                'table' => $tableName,
+                'changes' => $rowUpdates,
+                'where' => $whereForUpdate,
+            ]);
+
+            // Rows were affected, meaning the UPDATE worked / an entry already exists
+            if ($rowsAffected > 0) {
+                return;
+            }
+
+            // Because the UPDATE did not work, we do a regular insert
+            $this->insert($tableName, $row);
+        }, $tableName, $row, $indexColumns, $rowUpdates);
+    }
+
+    protected function validateMandatoryUpsertParameters(string $tableName, array $row, array $indexColumns)
+    {
+        // No table name specified
+        if (strlen($tableName) === 0) {
+            throw DBDebug::createException(
+                DBInvalidOptionException::class,
+                DBInterface::class,
+                'No table name specified for upsert'
+            );
+        }
+
+        // No insert row specified
+        if (count($row) === 0) {
+            throw DBDebug::createException(
+                DBInvalidOptionException::class,
+                DBInterface::class,
+                'No insert data specified for upsert for table "' . $tableName . '"'
+            );
+        }
+
+        // No index specified
+        if (count($indexColumns) === 0) {
+            throw DBDebug::createException(
+                DBInvalidOptionException::class,
+                DBInterface::class,
+                'No index specified for upsert for table "' . $tableName . '"'
+            );
+        }
+
+        // Make sure the index columns also exist in the insert row
+        foreach ($indexColumns as $fieldName) {
+            if (!isset($row[$fieldName])) {
+                throw DBDebug::createException(
+                    DBInvalidOptionException::class,
+                    DBInterface::class,
+                    'Index values are missing in insert row values'
+                );
+            }
+        }
+    }
+
+    protected function prepareUpsertRowUpdates(?array $rowUpdates, array $rowInsert, array $indexColumns): array
+    {
+        // No update fields defined, so we assume the table is changed the same way
+        // as with the insert
+        if ($rowUpdates === null) {
+            // Copy over insert fields and values
+            $rowUpdates = $rowInsert;
+
+            // Remove index fields for update
+            foreach ($indexColumns as $fieldName) {
+                unset($rowUpdates[$fieldName]);
+            }
+        }
+
+        return $rowUpdates;
     }
 
     /**

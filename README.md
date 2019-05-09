@@ -5,7 +5,7 @@ Squirrel Queries
 
 Provides a slimmed down concise interface for low level database queries and transactions (DBInterface) aswell as a query builder to make it easier and more expressive to create queries (DBBuilderInterface). The interfaces are limited to avoid confusion/misuse and encourage fail-safe usage.
 
-Doctrine is used as the underlying connection (and abstraction), what we add are an upsert (MERGE) functionality, structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.).
+Doctrine is used as the underlying connection (and abstraction), what we add are an insertOrUpdate functionality (known as UPSERT), structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.). This library also smoothes over some differences between MySQL, Postgres and SQLite.
 
 By default this library provides two layers, one dealing with Doctrine DBAL (passing the queries, processing and returning the results) and one dealing with errors (DBErrorHandler). DBErrorHandler catches deadlocks and connection problems and tries to repeat the query or transaction, and it unifies the exceptions coming from DBAL so the originating call to DBInterface is provided and the error can easily be found.
 
@@ -18,8 +18,10 @@ Table of contents
 -----------------
 
 - [Setting up](#setting-up)
+- [Database support](#database-support)
 - [DBInterface - low level interface](#dbinterface---low-level-interface)
 - [DBBuilderInterface - higher level query builder](#dbbuilderinterface---higher-level-query-builder)
+- [BLOB handling for Postgres](#blob-handling-for-postgres)
 - [Guidelines to use this library](#guidelines-to-use-this-library)
 
 Setting up
@@ -41,7 +43,12 @@ If you want to assemble a DBInterface object yourself, something like the follow
     
     // Create a doctrine connection
     $dbalConnection = DriverManager::getConnection([
-        'url' => 'mysql://user:secret@localhost/mydb'
+        'url' => 'mysql://user:secret@localhost/mydb',
+        'driverOptions' => [
+            \PDO::ATTR_EMULATE_PREPARES => false, // Separates query and values
+            \PDO::MYSQL_ATTR_FOUND_ROWS => true, // important so MySQL behaves like Postgres/SQLite
+            \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,
+        ],
     ]);
     
     // Create a MySQL implementation layer
@@ -53,7 +60,10 @@ If you want to assemble a DBInterface object yourself, something like the follow
     // Set implementation layer beneath the error layer
     $errorLayer->setLowerLayer($implementationLayer);
     
-    // $errorLayer is now useable and can be injected
+    // Rename our layered service - this is now our database object
+    $db = $errorLayer;
+    
+    // $db is now useable and can be injected
     // anywhere you need it. Typehint it with 
     // \Squirrel\Queries\DBInterface
     
@@ -61,11 +71,11 @@ If you want to assemble a DBInterface object yourself, something like the follow
         return $db->fetchOne('SELECT * FROM table');
     };
     
-    $fetchEntry($errorLayer);
+    $fetchEntry($db);
     
     // A builder just needs a DBInterface to be created:
     
-    $queryBuilder = new DBBuilderInterface($errorLayer);
+    $queryBuilder = new DBBuilderInterface($db);
     
     // The query builder generates more readable queries, and
     // helps your IDE in terms of type hints / possible options
@@ -90,6 +100,19 @@ If you want to assemble a DBInterface object yourself, something like the follow
     // It is also a good idea to catch \Squirrel\Queries\DBException
     // in your application in case of a DB error so it
     // can be handled gracefully
+
+Database support
+----------------
+
+This library has support for the three main open-source databases:
+
+- MySQL, all versions (at least 5.5+ is recommended)
+- SQLite, all versions, although native UPSERT queries are only supported in SQLite 3.24+ (which is included in PHP 7.3+), the functionality is emulated in lower versions
+- Postgres version 9.5 and above, because UPSERT queries were implemented in 9.5
+
+The functionality in this library has been tested against real versions of these databases to make sure it works, although there might be edge cases which warrant adjustments. If you find any issues please report them.
+
+For Postgres there are workarounds to make the BLOB type (called BYTEA in Postgres) easier to deal with, so handling BLOBs is almost as easy as with MySQL/SQLite.
     
 DBInterface - low level interface
 ---------------------------------
@@ -274,26 +297,24 @@ $rowsAffected = $db->update([
 `insert` does an INSERT query into one table, example:
 
 ```php
-$rowsAffected = $db->insert('yourdatabase.yourtable', [
+$insertId = $db->insert('yourdatabase.yourtable', [
     'tableId' => 5,
     'column1' => 'Henry',
     'other_column' => 'Liam',
-]);
-
-// Get the last insert ID if you have an autoincrement primary index:
-$newInsertedId = $db->lastInsertId();
+], 'rowId');
 ```
 
-The equivalent string query would be:
+The first parameter is the table name, the second parameter is the column names and values to insert, and the optional third parameter defines the column name for which the database creates an automatic insert ID (called AUTOINCREMENT for MySQL and SQLite, called SERIAL for Postgres). If a table has no AUTOINCREMENT column, or if you set it explicitely, just do not provide the third parameter.
 
-```php
-$rowsAffected = $db->change('INSERT INTO `yourdatabase`.`yourtable` (`tableId`,`column1`,`other_column`) VALUES (?,?,?)', [5, 'Henry', 'Liam']);
+The above query will execute the following SQL query:
 
-// Get the last insert ID if you have an autoincrement primary index:
-$newInsertedId = $db->lastInsertId();
+```sql
+INSERT INTO `yourdatabase`.`yourtable` (`tableId`,`column1`,`other_column`) VALUES (?,?,?)
 ```
 
-### UPSERT / MERGE
+with the values `5`, `Henry` and `Liam`.
+
+### insertOrUpdate - UPSERT / MERGE
 
 #### Definition
 
@@ -301,20 +322,20 @@ UPSERT (update-or-insert) queries are an addition to SQL, known under different 
 
 - MySQL implemented them as "INSERT ... ON DUPLICATE KEY UPDATE"
 - PostgreSQL and SQLite as "INSERT ... ON CONFLICT (index) DO UPDATE"
-- The ANSI standard knows them as MERGE queries
+- The ANSI standard knows them as MERGE queries, although those can be a bit different
 
-An upsert query tries to update a row, but if the row does not exists it does an insert instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT exists to be a faster and easier solution.
+In this library we call this type of query `insertOrUpdate`. Such a query tries to insert a row, but if the row already exists it does an update instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT exists to be a faster and easier solution.
 
 PostgreSQL and SQLite need the specific column names which form a unique index (already existing for the table) which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an upsert query.
 
 #### Usage and examples
 
-The first two arguments for the `upsert` function are identical to the normal insert function, the third defines the columns which form a unique or primary key for the table in the database. And the last array is the updates to do if the entry already exists in the database, but it is optional.
+The first two arguments for the `insertOrUpdate` function are identical to the normal insert function, the third defines the columns which form a unique or primary key for the table in the database. And the last array is the updates to do if the entry already exists in the database, but it is optional.
 
 An example could be:
 
 ```php
-$db->upsert('users_visits', [
+$db->insertOrUpdate('users_visits', [
     'userId' => 5,
     'visit' => 1,
 ], [
@@ -333,7 +354,7 @@ $db->change('INSERT INTO `users_visits` (`userId`,`visit`) VALUES (?,?) ON DUPLI
 For PostgreSQL/SQLite it would be:
 
 ```php
-$db->change('INSERT INTO `users_visits` (`userId`,`visit`) VALUES (?,?) ON CONFLICT (`userId`) DO UPDATE `visit` = `visit` + 1', [5, 1]);
+$db->change('INSERT INTO "users_visits" ("userId","visit") VALUES (?,?) ON CONFLICT ("userId") DO UPDATE SET "visit" = "visit" + 1', [5, 1]);
 ```
 
 If no entry exists in `users_visits`, one is inserted with `visit` set to 1. But if an entry already exists an UPDATE with `visit = visit + 1` is done instead.
@@ -341,7 +362,7 @@ If no entry exists in `users_visits`, one is inserted with `visit` set to 1. But
 Defining the UPDATE part is optional, and if left empty the UPDATE just does the same changes as the INSERT minus the index columns. Example:
 
 ```php
-$db->upsert('users_names', [
+$db->insertOrUpdate('users_names', [
     'userId' => 5,
     'firstName' => 'Jane',
 ], [
@@ -392,11 +413,9 @@ An actual example might be:
 
 ```php
 $db->transaction(function() use ($db) {
-    $db->insert('myTable', [
-      'tableName' => 'Henry',
-    ]);
-  
-    $tableId = $db->lastInsertId();
+    $tableId = $db->insert('myTable', [
+        'tableName' => 'Henry',
+    ], 'tableId');
   
     $db->update([
         'table' => 'otherTable',
@@ -414,12 +433,9 @@ If you call `transaction` within a transaction function, that function will just
 
 ```php
 $db->transaction(function() use ($db) {
-    $db->insert('myTable', [
-        'tableId' => 5,
+    $tableId = $db->insert('myTable', [
         'tableName' => 'Henry',
-    ]);
-  
-    $tableId = $db->lastInsertId();
+    ], 'tableId');
   
     // This still does exactly the same as in the previous example, because the
     // function will be executed without a "new" transaction being started,
@@ -447,11 +463,9 @@ If you want to pass arguments to $func, this would be an example:
 
 ```php
 $db->transaction(function($db, $table, $tableName) {
-    $db->insert($table, [
-        'tableName' => $tableName,
-    ]);
-  
-    $tableId = $db->lastInsertId();
+    $tableId = $db->insert('myTable', [
+        'tableName' => 'Henry',
+    ], 'tableId');
   
     $db->update([
         'table' => 'otherTable',
@@ -471,7 +485,7 @@ When using SELECT queries within a transaction you should always remember that t
 
 If you want to be safe it is recommended to quote all identifiers (table names and column names) with the DBInterface `quoteIdentifier` function for non-structured `select` and `update` queries.
 
-For `insert` and `upsert` the quoting is done for you, and for structured queries most of the quoting is done for you, except if you use an expression, where you can just use colons to specify a table or column name.
+For `insert` and `insertOrUpdate` the quoting is done for you, and for structured queries most of the quoting is done for you, except if you use an expression, where you can just use colons to specify a table or column name.
 
 If you quote all identifiers, then changing database systems (where different reserved keywords might exist) or upgrading a database (where new keywords might be reserved) is easier.
 
@@ -654,10 +668,10 @@ $newUserIdFromDatabase = $dbBuilder
     ->set([
       'userName' => 'Kjell',
     ])
-    ->writeAndReturnNewId();
+    ->writeAndReturnNewId('rowId');
 ```
 
-You can use `writeAndReturnNewId` if you are expecting/needing an insert ID, or just `write` to insert the entry without a return value.
+You can use `writeAndReturnNewId` if you are expecting/needing an insert ID (you need to specify the column name of the insert ID), or just `write` to insert the entry without a return value.
 
 ### Update
 
@@ -682,15 +696,14 @@ You can use `writeAndReturnAffectedNumber` if you are interested in the number o
 
 ### Insert or Update
 
-This makes the UPSERT functionality in DBInterface a bit easier to digest, using the same information:
+This makes the insertOrUpdate functionality in DBInterface a bit easier to digest, using the same information:
 
 ```php
-$result = $insertBuilder
+$insertBuilder
     ->insertOrUpdate()
-    ->inTable('users')
+    ->inTable('users_visits')
     ->set([
-        'userId',
-        'firstName' => 'Annemarie',
+        'userId' => 5,
         'visits' => 1,
     ])
     ->index([
@@ -699,10 +712,26 @@ $result = $insertBuilder
     ->setOnUpdate([
         ':visits: = :visits: + 1',
     ])
-    ->writeAndReturnWhatHappened();
+    ->write();
 ```
 
-`writeAndReturnWhatHappened` returns either "insert", "update" or an empty string "" - this represents what the database did, if a row was inserted, if an existing row was updated, or if nothing happened because the row data was already identical to the query data. You can use `write` if you are not interested in the query result.
+Only `write` is available to execute the query.
+
+For MySQL, this query would be converted to:
+
+```sql
+INSERT INTO `users_visits` (`userId`,`visit`) VALUES (?,?) ON DUPLICATE KEY UPDATE `visit` = `visit` + 1
+```
+
+With the values `5` and `1` as query parameters.
+
+For PostgreSQL/SQLite it would be:
+
+```sql
+INSERT INTO "users_visits" ("userId","visit") VALUES (?,?) ON CONFLICT ("userId") DO UPDATE SET "visit" = "visit" + 1
+```
+
+If no entry exists in `users_visits`, one is inserted with `visit` set to 1. But if an entry already exists an UPDATE with `visit = visit + 1` is done instead.
 
 ### Delete
 
@@ -782,6 +811,49 @@ $rowsAffected = $dbBuilder
 ```
 
 This should make it easy to read and write queries, even if you don't know much SQL, and you don't have to think about separating the query and the parameters yourself - the library is doing it for you.
+
+BLOB handling for Postgres
+--------------------------
+
+For MySQL and SQLite retrieving or inserting/updating BLOBs (Binary Large Objects) works just the same as with shorter/non-binary string fields. Postgres needs some adjustments, but these are made very easy bis this library:
+
+- For SELECT queries, streams returned by Postgres are automatically converted into strings, mimicking how MySQL and SQLite are doing it
+- For INSERT/UPDATE queries, you need to wrap BLOB values with an instance of LargeObject provided by this library.
+
+So the following works if `file_data` is a BYTEA field in Postgres:
+
+```php
+use Squirrel\Queries\LargeObject;
+
+$rowsAffected = $dbBuilder
+    ->update()
+    ->inTable('files')
+    ->set([
+        'file_name' => 'someimage.jpg',
+        'file_data' => new LargeObject(file_get_contents('someimage.jpg')),
+    ])
+    ->where([
+        'file_id' => 33,
+    ])
+    ->write();
+```
+
+And retrieving binary data is seamless:
+
+```php
+$file = $dbBuilder
+    ->select()
+    ->inTable('files')
+    ->where([
+        'file_id' => 33,
+    ])
+    ->getOneEntry();
+
+// Use file_data in some way, like showing or writing it - it is a regular string
+echo $file['file_data'];    
+```
+
+You can use the `LargeObject` class with your MySQL/SQLite UPDATEs and INSERTs too, to make your code work across all systems, although it will work even without it. Only Postgres explicitely needs it for BYTEA columns.
 
 Guidelines to use this library
 ------------------------------

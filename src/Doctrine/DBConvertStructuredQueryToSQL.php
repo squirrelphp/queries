@@ -5,6 +5,7 @@ namespace Squirrel\Queries\Doctrine;
 use Squirrel\Queries\DBDebug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
+use Squirrel\Queries\LargeObject;
 
 /**
  * Converts parts of a structured query to pure (and safe) SQL
@@ -297,13 +298,13 @@ class DBConvertStructuredQueryToSQL
 
             // No assignment operator, meaning we have a fieldName => value entry
             if (\strpos($expression, '=') === false) {
-                // If we have no value to assign there is a problem
-                if (!\is_scalar($values) && !\is_null($values)) {
+                // No value was given, we just have a field name without new value
+                if (\is_array($values) && \count($values)===0) {
                     throw DBDebug::createException(
                         DBInvalidOptionException::class,
                         DBInterface::class,
-                        'Invalid "changes" definition, no assignment operator and ' .
-                        'no/invalid value given, so nothing to change: ' . DBDebug::sanitizeData($expression)
+                        'Invalid "changes" definition, no value specified: ' .
+                        DBDebug::sanitizeData($expression) . ' => ' . DBDebug::sanitizeData($values)
                     );
                 }
 
@@ -329,8 +330,27 @@ class DBConvertStructuredQueryToSQL
             // Add to list of finished WHERE expressions
             $changesList[] = $expression;
 
-            // Add new parameters to query parameters
-            $queryValues = $this->addQueryVariables($queryValues, $values);
+            // Skip this entry for values - this is just an expression
+            if (\is_array($values) && \count($values)===0) {
+                continue;
+            }
+
+            // Add new parameters to query parameters - Only scalar values and NULL are allowed
+            if (!\is_scalar($values) && !\is_null($values) && !($values instanceof LargeObject)) {
+                throw DBDebug::createException(
+                    DBInvalidOptionException::class,
+                    DBInterface::class,
+                    'Invalid query variable specified, it is non-scalar and no large object: ' .
+                    DBDebug::sanitizeData($expression) . ' => ' . DBDebug::sanitizeData($values)
+                );
+            }
+
+            // Convert bool to int
+            if (\is_bool($values)) {
+                $values = \intval($values);
+            }
+
+            $queryValues[] = $values;
         }
 
         return [\implode(',', $changesList), $queryValues];
@@ -517,13 +537,13 @@ class DBConvertStructuredQueryToSQL
     }
 
     /**
-     * Add query variables to existing values
+     * Add query variables to existing values - but NULL is not allowed as a value
      *
      * @param array $existingValues
      * @param mixed $newValues
      * @return array
      */
-    private function addQueryVariables(array $existingValues, $newValues)
+    private function addQueryVariablesNoNull(array $existingValues, $newValues)
     {
         // Convert to array of values if not already done
         if (!\is_array($newValues)) {
@@ -533,7 +553,7 @@ class DBConvertStructuredQueryToSQL
         // Add all the values to the query values
         foreach ($newValues as $value) {
             // Only scalar values and NULL are allowed
-            if (!\is_scalar($value) && !\is_null($value)) {
+            if (!\is_scalar($value)) {
                 throw DBDebug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
@@ -551,35 +571,6 @@ class DBConvertStructuredQueryToSQL
         }
 
         return $existingValues;
-    }
-
-    /**
-     * Add query variables to existing values - but NULL is not allowed as a value
-     *
-     * @param array $existingValues
-     * @param mixed $newValues
-     * @return array
-     */
-    private function addQueryVariablesNoNull(array $existingValues, $newValues)
-    {
-        // Convert to array of values if not already done
-        if (!\is_array($newValues)) {
-            $newValues = [$newValues];
-        }
-
-        // If there are multiple values, check if any element in the array has a null value
-        foreach ($newValues as $value) {
-            if (\is_null($value)) {
-                throw DBDebug::createException(
-                    DBInvalidOptionException::class,
-                    DBInterface::class,
-                    'Invalid query variable specified, NULL provided where NULL is not allowed'
-                );
-            }
-        }
-
-        // null not found - add query variables as usual
-        return $this->addQueryVariables($existingValues, $newValues);
     }
 
     /**

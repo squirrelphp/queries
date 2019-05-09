@@ -71,17 +71,17 @@ trait DBPassToLowerLayerTrait
     /**
      * @inheritDoc
      */
-    public function insert(string $tableName, array $row = []): int
+    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
-        return $this->lowerLayer->insert($tableName, $row);
+        return $this->lowerLayer->insert($tableName, $row, $autoIncrementIndex);
     }
 
     /**
      * @inheritDoc
      */
-    public function upsert(string $tableName, array $row = [], array $indexColumns = [], array $rowUpdates = []): int
+    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
     {
-        return $this->lowerLayer->upsert($tableName, $row, $indexColumns, $rowUpdates);
+        $this->lowerLayer->insertOrUpdate($tableName, $row, $indexColumns, $rowUpdates);
     }
 
     /**
@@ -106,14 +106,6 @@ trait DBPassToLowerLayerTrait
     public function change(string $query, array $vars = []): int
     {
         return $this->lowerLayer->change($query, $vars);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function lastInsertId($name = null): string
-    {
-        return $this->lowerLayer->lastInsertId($name);
     }
 
     /**

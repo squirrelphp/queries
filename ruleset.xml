@@ -2,8 +2,11 @@
 <ruleset name="IQ">
     <description>PSR2 with some additional useful sniffs</description>
 
-    <!-- Include the whole PSR-2 standard -->
-    <rule ref="PSR2"/>
+    <!-- Include the whole PSR-2 standard except for line length -->
+    <rule ref="PSR2">
+        <exclude name="Generic.Files.LineLength"/>
+    </rule>
+
 
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 

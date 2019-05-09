@@ -70,12 +70,7 @@ class InsertEntryTest extends \PHPUnit\Framework\TestCase
             ->with('someTTTable', [
                 'fieldName' => 33,
                 'floaty' => 3.7,
-            ]);
-
-        $this->db
-            ->shouldReceive('lastInsertId')
-            ->once()
-            ->withNoArgs()
+            ], 'fieldName')
             ->andReturn($expectedResult);
 
         $result = $insertBuilder
@@ -84,7 +79,7 @@ class InsertEntryTest extends \PHPUnit\Framework\TestCase
                 'fieldName' => 33,
                 'floaty' => 3.7,
             ])
-            ->writeAndReturnNewId();
+            ->writeAndReturnNewId('fieldName');
 
         $this->assertSame($expectedResult, $result);
     }

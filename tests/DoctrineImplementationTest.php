@@ -284,7 +284,60 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
+    private function bindValues($statement, $vars)
+    {
+        $varCounter = 1;
+
+        foreach ($vars as $var) {
+            $statement
+                ->shouldReceive('bindValue')
+                ->once()
+                ->with(\Mockery::mustBe($varCounter++), \Mockery::mustBe($var), \PDO::PARAM_STR);
+        }
+    }
+
     public function testInsert()
+    {
+        // Expected query and parameters
+        $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
+        $vars = [5, 'Dada', 1, 43535];
+
+        // Doctrine statement
+        $statement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($query))
+            ->andReturn($statement);
+
+        $this->bindValues($statement, $vars);
+
+        // "Execute" call on doctrine result statement
+        $statement
+            ->shouldReceive('execute')
+            ->once()
+            ->withNoArgs();
+
+        // Close result set
+        $statement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        // Insert query call
+        $this->db->insert('tableName', [
+            'id' => 5,
+            'name' => 'Dada',
+            'active' => true,
+            'lastUpdate' => 43535,
+        ]);
+
+        // Make sure the query has ended with the correct result
+        $this->assertTrue(true);
+    }
+
+    public function testLastInsertId()
     {
         // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (?,?,?)';
@@ -300,50 +353,34 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($query))
             ->andReturn($statement);
 
+        $this->bindValues($statement, $vars);
+
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
-
-        // "RowCount" call on doctrine result statement
-        $statement
-            ->shouldReceive('rowCount')
-            ->once()
-            ->andReturn(5);
+            ->withNoArgs();
 
         // Close result set
         $statement
             ->shouldReceive('closeCursor')
             ->once();
 
+        $this->connection
+            ->shouldReceive('lastInsertId')
+            ->once()
+            ->with(\Mockery::mustBe('tableName_id_seq'))
+            ->andReturn(5);
+
         // Insert query call
         $result = $this->db->insert('tableName', [
             'id' => 5,
             'name' => 'Dada',
             'lastUpdate' => 43535,
-        ]);
+        ], 'id');
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(5, $result);
-    }
-
-    public function testLastInsertId()
-    {
-        // Query parameters
-        $name = 'yayyay';
-
-        // "lastInsertId" call to doctrine connection
-        $this->connection
-            ->shouldReceive('lastInsertId')
-            ->once()
-            ->with(\Mockery::mustBe($name))
-            ->andReturn(88);
-
-        $result = $this->db->lastInsertId($name);
-
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(88, $result);
+        $this->assertEquals('5', $result);
     }
 
     public function testUpdate()
@@ -380,8 +417,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     public function testChange()
     {
         // Expected query and parameters
-        $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (?,?,?)';
-        $vars = [5, 'Dada', 43535];
+        $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
+        $vars = [5, 'Dada', 1, 43535];
 
         // Doctrine statement
         $statement = \Mockery::mock(ResultStatement::class);
@@ -393,11 +430,13 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($query))
             ->andReturn($statement);
 
+        $this->bindValues($statement, $vars);
+
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->withNoArgs();
 
         // "RowCount" call on doctrine result statement
         $statement
@@ -411,9 +450,10 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->once();
 
         // Insert query call
-        $result = $this->db->change('INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (?,?,?)', [
+        $result = $this->db->change('INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)', [
             5,
             'Dada',
+            true,
             43535,
         ]);
 
@@ -440,7 +480,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe([]));
+            ->withNoArgs();
 
         // "RowCount" call on doctrine result statement
         $statement
@@ -460,6 +500,225 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(5, $result);
     }
 
+    public function testInsertOrUpdateEmulationUpdate()
+    {
+        // Expected query and parameters
+        $query = 'UPDATE "tablename" SET "name"=? WHERE "id"=?';
+        $vars = ['Andy', 13];
+
+        $this->connection
+            ->shouldReceive('beginTransaction')
+            ->once();
+
+        // Doctrine statement
+        $statement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($query))
+            ->andReturn($statement);
+
+        $this->bindValues($statement, $vars);
+
+        // "Execute" call on doctrine result statement
+        $statement
+            ->shouldReceive('execute')
+            ->once()
+            ->withNoArgs();
+
+        // "RowCount" call on doctrine result statement
+        $statement
+            ->shouldReceive('rowCount')
+            ->once()
+            ->andReturn(1);
+
+        // Close result set
+        $statement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        $this->connection
+            ->shouldReceive('commit')
+            ->once();
+
+        $this->db->insertOrUpdateEmulation('tablename', [
+            'id' => 13,
+            'name' => 'Andy',
+        ], ['id']);
+
+        $this->assertTrue(true);
+    }
+
+    public function testInsertOrUpdateEmulationInsert()
+    {
+        // Expected query and parameters
+        $query = 'UPDATE "tablename" SET "name"=? WHERE "id"=?';
+        $vars = ['Andy', 13];
+
+        $this->connection
+            ->shouldReceive('beginTransaction')
+            ->once();
+
+        // Doctrine statement
+        $statement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($query))
+            ->andReturn($statement);
+
+        $this->bindValues($statement, $vars);
+
+        // "Execute" call on doctrine result statement
+        $statement
+            ->shouldReceive('execute')
+            ->once()
+            ->withNoArgs();
+
+        // "RowCount" call on doctrine result statement
+        $statement
+            ->shouldReceive('rowCount')
+            ->once()
+            ->andReturn(0);
+
+        // Close result set
+        $statement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        // Expected query and parameters
+        $insertQuery = 'INSERT INTO "tablename" ("id","name") VALUES (?,?)';
+        $insertVars = [13, 'Andy'];
+
+        // Doctrine statement
+        $insertStatement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($insertQuery))
+            ->andReturn($insertStatement);
+
+        $this->bindValues($insertStatement, $insertVars);
+
+        // "Execute" call on doctrine result statement
+        $insertStatement
+            ->shouldReceive('execute')
+            ->once()
+            ->withNoArgs();
+
+        // "RowCount" call on doctrine result statement
+        $insertStatement
+            ->shouldReceive('rowCount')
+            ->once()
+            ->andReturn(1);
+
+        // Close result set
+        $insertStatement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        $this->connection
+            ->shouldReceive('commit')
+            ->once();
+
+        $this->db->insertOrUpdateEmulation('tablename', [
+            'id' => 13,
+            'name' => 'Andy',
+        ], ['id']);
+
+        $this->assertTrue(true);
+    }
+
+    public function testInsertOrUpdateEmulationDoNothingInsert()
+    {
+        // Expected query and parameters
+        $query = 'UPDATE "tablename" SET "id"="id" WHERE "id"=?';
+        $vars = [13];
+
+        $this->connection
+            ->shouldReceive('beginTransaction')
+            ->once();
+
+        // Doctrine statement
+        $statement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($query))
+            ->andReturn($statement);
+
+        $this->bindValues($statement, $vars);
+
+        // "Execute" call on doctrine result statement
+        $statement
+            ->shouldReceive('execute')
+            ->once()
+            ->withNoArgs();
+
+        // "RowCount" call on doctrine result statement
+        $statement
+            ->shouldReceive('rowCount')
+            ->once()
+            ->andReturn(0);
+
+        // Close result set
+        $statement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        // Expected query and parameters
+        $insertQuery = 'INSERT INTO "tablename" ("id","name") VALUES (?,?)';
+        $insertVars = [13, 'Andy'];
+
+        // Doctrine statement
+        $insertStatement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($insertQuery))
+            ->andReturn($insertStatement);
+
+        $this->bindValues($insertStatement, $insertVars);
+
+        // "Execute" call on doctrine result statement
+        $insertStatement
+            ->shouldReceive('execute')
+            ->once()
+            ->withNoArgs();
+
+        // "RowCount" call on doctrine result statement
+        $insertStatement
+            ->shouldReceive('rowCount')
+            ->once()
+            ->andReturn(1);
+
+        // Close result set
+        $insertStatement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        $this->connection
+            ->shouldReceive('commit')
+            ->once();
+
+        $this->db->insertOrUpdateEmulation('tablename', [
+            'id' => 13,
+            'name' => 'Andy',
+        ], ['id'], []);
+
+        $this->assertTrue(true);
+    }
+
     public function testDelete()
     {
         // Expected query and parameters
@@ -476,11 +735,13 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($query))
             ->andReturn($statement);
 
+        $this->bindValues($statement, $vars);
+
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->withNoArgs();
 
         // "RowCount" call on doctrine result statement
         $statement
@@ -522,7 +783,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe([]));
+            ->withNoArgs();
 
         // "RowCount" call on doctrine result statement
         $statement
@@ -1233,11 +1494,13 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($query . ' LIMIT 13'))
             ->andReturn($statement);
 
+        $this->bindValues($statement, $vars);
+
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->withNoArgs();
 
         // "RowCount" call on doctrine result statement
         $statement
@@ -1266,8 +1529,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testUpdateStructuredNULL()
     {
-        $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=?,"nullentry"=? WHERE "blabla"=?';
-        $vars = ['nicevalue', null, 5];
+        $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=?,"nullentry"=?,"active"=? WHERE "blabla"=?';
+        $vars = ['nicevalue', null, 1, 5];
 
         // Doctrine statement
         $statement = \Mockery::mock(ResultStatement::class);
@@ -1279,11 +1542,13 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($query))
             ->andReturn($statement);
 
+        $this->bindValues($statement, $vars);
+
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->withNoArgs();
 
         // "RowCount" call on doctrine result statement
         $statement
@@ -1301,6 +1566,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'changes' => [
                 'anyfieldname' => 'nicevalue',
                 'nullentry' => null,
+                'active' => true,
             ],
             'where' => [
                 'blabla' => 5,
@@ -1924,6 +2190,23 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
+    public function testConvertToUpdateSQLStringInvalidOptionBadChange2()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        // Try it with the invalid option
+        $this->db->update([
+            'changes' => [
+                'dada' => new \stdClass(),
+            ],
+            'table' => 'blobs.aa_sexy',
+            'where' => [
+                'blabla' => 5,
+                'dada' => true,
+            ],
+        ]);
+    }
+
     public function testConvertToUpdateSQLStringInvalidOptionBadExpression()
     {
         $this->expectException(DBInvalidOptionException::class);
@@ -1954,5 +2237,27 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
                 'blabla' => 5,
             ],
         ]);
+    }
+
+    public function testInsertOrUpdateEmulationNoIndex()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        // Try it with the invalid option
+        $this->db->insertOrUpdateEmulation('tablename', [
+            'id' => 13,
+            'name' => 'Andy',
+        ], []);
+    }
+
+    public function testInsertOrUpdateEmulationIndexNotInRow()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        // Try it with the invalid option
+        $this->db->insertOrUpdateEmulation('tablename', [
+            'id2' => 13,
+            'name' => 'Andy',
+        ], ['id']);
     }
 }

@@ -3,6 +3,8 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\ResultStatement;
+use Doctrine\DBAL\FetchMode;
 use Doctrine\DBAL\Statement;
 use Squirrel\Queries\Doctrine\DBPostgreSQLImplementation;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
@@ -35,6 +37,106 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db = new DBPostgreSQLImplementation($this->connection);
     }
 
+    private function bindValues($statement, $vars)
+    {
+        $varCounter = 1;
+
+        foreach ($vars as $var) {
+            $statement
+                ->shouldReceive('bindValue')
+                ->once()
+                ->with(\Mockery::mustBe($varCounter++), \Mockery::mustBe($var), \PDO::PARAM_STR);
+        }
+    }
+
+    public function testFetchOne()
+    {
+        // Query parameters
+        $query = 'SELECT blob FROM yudihui WHERE active = ? AND name = ? AND balance = ?';
+        $vars = [0, 'dada', 3.5];
+
+        // Doctrine statement
+        $statement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($query))
+            ->andReturn($statement);
+
+        // "Execute" call on doctrine result statement
+        $statement
+            ->shouldReceive('execute')
+            ->once()
+            ->with(\Mockery::mustBe($vars));
+
+        $fp = \fopen('php://temp', 'rb+');
+        \fwrite($fp, 'binary data!');
+        \fseek($fp, 0);
+
+        $statement
+            ->shouldReceive('fetch')
+            ->once()
+            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
+            ->andReturn([
+                'blob' => $fp,
+            ]);
+
+        $statement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        $result = $this->db->fetchOne($query, $vars);
+
+        // Make sure the query has ended with the correct result
+        $this->assertEquals(['blob' => 'binary data!'], $result);
+    }
+
+    public function testFetchAll()
+    {
+        // Query parameters
+        $query = 'SELECT blob FROM yudihui WHERE active = ? AND name = ? AND balance = ?';
+        $vars = [0, 'dada', 3.5];
+
+        // Doctrine statement
+        $statement = \Mockery::mock(ResultStatement::class);
+
+        // "Prepare" call to doctrine connection
+        $this->connection
+            ->shouldReceive('prepare')
+            ->once()
+            ->with(\Mockery::mustBe($query))
+            ->andReturn($statement);
+
+        // "Execute" call on doctrine result statement
+        $statement
+            ->shouldReceive('execute')
+            ->once()
+            ->with(\Mockery::mustBe($vars));
+
+        $fp = \fopen('php://temp', 'rb+');
+        \fwrite($fp, 'binary data!');
+        \fseek($fp, 0);
+
+        $statement
+            ->shouldReceive('fetchAll')
+            ->once()
+            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
+            ->andReturn([[
+                'blob' => $fp,
+            ]]);
+
+        $statement
+            ->shouldReceive('closeCursor')
+            ->once();
+
+        $result = $this->db->fetchAll($query, $vars);
+
+        // Make sure the query has ended with the correct result
+        $this->assertEquals([['blob' => 'binary data!']], $result);
+    }
+
     /**
      * Test vanilla upsert without explicit update part
      */
@@ -49,30 +151,31 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             $this->quoteIdentifier('bla43') . ',' .
             $this->quoteIdentifier('judihui') .
             ') VALUES (?,?,?,?,?) ' .
-            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE ' .
+            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE SET ' .
             $this->quoteIdentifier('name') . '=?,' .
             $this->quoteIdentifier('bla43') . '=?,' .
             $this->quoteIdentifier('judihui') . '=?';
 
+        $vars = [
+            5,
+            6,
+            'value',
+            'niiiiice',
+            1,
+            'value',
+            'niiiiice',
+            1,
+        ];
+
         // Statement and the data values it should receive
         $statement = \Mockery::mock(Statement::class);
+
+        $this->bindValues($statement, $vars);
+
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe([
-                5,
-                6,
-                'value',
-                'niiiiice',
-                5,
-                'value',
-                'niiiiice',
-                5,
-            ]));
-        $statement
-            ->shouldReceive('rowCount')
-            ->once()
-            ->andReturn(1);
+            ->withNoArgs();
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -87,19 +190,18 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->once();
 
         // Test the upsert
-        $result = $this->db->upsert('example.example', [
+        $this->db->insertOrUpdate('example.example', [
             'id' => 5,
             'id2' => 6,
             'name' => 'value',
             'bla43' => 'niiiiice',
-            'judihui' => 5,
+            'judihui' => true,
         ], [
             'id',
             'id2',
         ]);
 
-        // Should return 1
-        $this->assertSame(1, $result);
+        $this->assertTrue(true);
     }
 
     /**
@@ -137,32 +239,33 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             $this->quoteIdentifier('bla43') . ',' .
             $this->quoteIdentifier('judihui') .
             ') VALUES (?,?,?,?,?) ' .
-            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE ' .
+            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE SET ' .
             $this->quoteIdentifier('name') . '=?,' .
             $this->quoteIdentifier('lala45') . '=?,judihui = judihui + 1,' .
             $this->quoteIdentifier('evenmore') . '=?,' .
             $this->quoteIdentifier('lastone') . '=?';
 
+        $vars = [
+            5,
+            6,
+            'value',
+            'niiiiice',
+            5,
+            'value5',
+            '534',
+            8,
+            'laaaast',
+        ];
+
         // Statement and the data values it should receive
         $statement = \Mockery::mock(Statement::class);
+
+        $this->bindValues($statement, $vars);
+
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe([
-                5,
-                6,
-                'value',
-                'niiiiice',
-                5,
-                'value5',
-                '534',
-                8,
-                'laaaast',
-            ]));
-        $statement
-            ->shouldReceive('rowCount')
-            ->once()
-            ->andReturn(2);
+            ->withNoArgs();
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -177,7 +280,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->once();
 
         // Test the upsert
-        $result = $this->db->upsert('example.example', [
+        $this->db->insertOrUpdate('example.example', [
             'id' => 5,
             'id2' => 6,
             'name' => 'value',
@@ -194,8 +297,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             'lastone' => 'laaaast',
         ]);
 
-        // Should return 2
-        $this->assertSame(2, $result);
+        $this->assertTrue(true);
     }
 
     /**
@@ -211,39 +313,35 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             $this->quoteIdentifier('bla43') . ',' .
             $this->quoteIdentifier('judihui') .
             ') VALUES (?,?,?,?,?) ' .
-            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE ' .
+            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE SET ' .
             $this->quoteIdentifier('name') . '=?,' .
             $this->quoteIdentifier('lala45') . '=?,' .
             $this->quoteIdentifier('judihui') . ' = ' . $this->quoteIdentifier('judihui') . ' + 1,' .
             $this->quoteIdentifier('judihui') . ' = ' . $this->quoteIdentifier('judihui') . ' + ?,' .
-            $this->quoteIdentifier('judihui') . ' = ' . $this->quoteIdentifier('judihui') . ' + ? + ? + ? - ?,' .
             $this->quoteIdentifier('evenmore') . '=?,' . $this->quoteIdentifier('lastone') . '=?';
+
+        $vars = [
+            5,
+            6,
+            'value',
+            'niiiiice',
+            5,
+            'value5',
+            '534',
+            13,
+            8,
+            'laaaast',
+        ];
 
         // Statement and the data values it should receive
         $statement = \Mockery::mock(Statement::class);
+
+        $this->bindValues($statement, $vars);
+
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe([
-                5,
-                6,
-                'value',
-                'niiiiice',
-                5,
-                'value5',
-                '534',
-                13,
-                13,
-                18,
-                67,
-                'dada',
-                8,
-                'laaaast',
-            ]));
-        $statement
-            ->shouldReceive('rowCount')
-            ->once()
-            ->andReturn(2);
+            ->withNoArgs();
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -258,7 +356,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->once();
 
         // Test the upsert
-        $result = $this->db->upsert('example.example', [
+        $this->db->insertOrUpdate('example.example', [
             'id' => 5,
             'id2' => 6,
             'name' => 'value',
@@ -272,13 +370,11 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             'lala45' => '534',
             ':judihui: = :judihui: + 1',
             ':judihui: = :judihui: + ?' => 13,
-            ':judihui: = :judihui: + ? + ? + ? - ?' => [13, 18, 67, 'dada'],
             'evenmore' => 8,
             'lastone' => 'laaaast',
         ]);
 
-        // Should return 2
-        $this->assertSame(2, $result);
+        $this->assertTrue(true);
     }
 
     /**
@@ -291,21 +387,28 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             $this->quoteIdentifier('id') . ',' .
             $this->quoteIdentifier('id2') .
             ') VALUES (?,?) ' .
-            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO UPDATE 1=1';
+            'ON CONFLICT (' . $this->quoteIdentifier('id') . ',' . $this->quoteIdentifier('id2') . ') DO NOTHING';
+
+        $vars = [
+            5,
+            6,
+        ];
 
         // Statement and the data values it should receive
         $statement = \Mockery::mock(Statement::class);
+
+        $this->bindValues($statement, $vars);
+
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe([
-                5,
-                6,
-            ]));
+            ->withNoArgs();
         $statement
-            ->shouldReceive('rowCount')
+            ->shouldReceive('fetchAll')
             ->once()
-            ->andReturn(2);
+            ->andReturn([
+                ['case' => 'update'],
+            ]);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -320,7 +423,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->once();
 
         // Test the upsert
-        $result = $this->db->upsert('example.example', [
+        $this->db->insertOrUpdate('example.example', [
             'id' => 5,
             'id2' => 6,
         ], [
@@ -328,8 +431,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             'id2',
         ]);
 
-        // Should return 2
-        $this->assertSame(2, $result);
+        $this->assertTrue(true);
     }
 
     public function testUpsertInvalidOptionNoTableName()
@@ -338,7 +440,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->upsert('', [
+        $this->db->insertOrUpdate('', [
             'dada' => 5,
             'fieldname' => 'rowvalue',
         ]);
@@ -350,6 +452,6 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->upsert('table');
+        $this->db->insertOrUpdate('table');
     }
 }

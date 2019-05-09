@@ -188,14 +188,12 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('insert')
-            ->with(\Mockery::mustBe($tableName), \Mockery::mustBe($row))
-            ->andReturn(7);
+            ->with(\Mockery::mustBe($tableName), \Mockery::mustBe($row), '');
 
         // Make the trait function call
-        $return = $this->dbLowerLayerObject->insert($tableName, $row);
+        $this->dbLowerLayerObject->insert($tableName, $row);
 
-        // Check the result
-        $this->assertSame(7, $return);
+        $this->assertTrue(true);
     }
 
     public function testUpsert()
@@ -216,20 +214,18 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
 
         // What we expect to be called with the lower layer
         $this->dbRawObject
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->with(
                 \Mockery::mustBe($tableName),
                 \Mockery::mustBe($row),
                 \Mockery::mustBe($indexColumns),
                 \Mockery::mustBe($rowUpdates)
-            )
-            ->andReturn(7);
+            );
 
         // Make the trait function call
-        $return = $this->dbLowerLayerObject->upsert($tableName, $row, $indexColumns, $rowUpdates);
+        $this->dbLowerLayerObject->insertOrUpdate($tableName, $row, $indexColumns, $rowUpdates);
 
-        // Check the result
-        $this->assertSame(7, $return);
+        $this->assertTrue(true);
     }
 
     public function testUpdate()
@@ -278,17 +274,25 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
 
     public function testLastInsertId()
     {
+        // Variables to pass to the function
+        $tableName = 'users';
+        $row = [
+            'userId' => 1,
+            'userName' => 'Liam',
+            'createDate' => 1048309248,
+        ];
+
         // What we expect to be called with the lower layer
         $this->dbRawObject
-            ->shouldReceive('lastInsertId')
-            ->with(\Mockery::mustBe('dada'))
-            ->andReturn(5);
+            ->shouldReceive('insert')
+            ->with(\Mockery::mustBe($tableName), \Mockery::mustBe($row), 'userId')
+            ->andReturn(7);
 
         // Make the trait function call
-        $return = $this->dbLowerLayerObject->lastInsertId('dada');
+        $return = $this->dbLowerLayerObject->insert($tableName, $row, 'userId');
 
         // Check the result
-        $this->assertSame('5', $return);
+        $this->assertSame('7', $return);
     }
 
     public function testChange()

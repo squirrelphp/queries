@@ -1,0 +1,59 @@
+version: "3.7"
+services:
+    squirrel_queries_72:
+        image: thecodingmachine/php:7.2-v2-cli
+        container_name: squirrel_queries_72
+        tty: true
+        working_dir: /usr/src/app
+        command: ["vendor/bin/phpunit", "--colors=always", "--filter", "Integration"]
+        volumes:
+            - .:/usr/src/app
+        environment:
+            PHP_EXTENSION_APCU: 0
+            PHP_EXTENSION_REDIS: 0
+            PHP_EXTENSION_PDO_MYSQL: 1
+            PHP_EXTENSION_PDO_PGSQL: 1
+            PHP_INI_MEMORY_LIMIT: 1g
+            PHP_INI_ERROR_REPORTING: E_ALL
+            SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
+            SQUIRREL_TEST_POSTGRES: 'postgres://user:password@squirrel_queries_postgres/postgres?charset=UTF-8'
+            SQUIRREL_TEST_MYSQL: 'mysql://user:password@squirrel_queries_mysql/shop'
+            STARTUP_COMMAND_1: composer install
+        depends_on:
+            - squirrel_queries_postgres
+            - squirrel_queries_mysql
+
+    squirrel_queries_73:
+        image: thecodingmachine/php:7.3-v2-cli
+        container_name: squirrel_queries_73
+        tty: true
+        working_dir: /usr/src/app
+        command: ["vendor/bin/phpunit", "--colors=always", "--filter", "SQLiteDoctrineIntegrationTest"]
+        volumes:
+            - .:/usr/src/app
+        environment:
+            PHP_EXTENSION_APCU: 0
+            PHP_EXTENSION_REDIS: 0
+            PHP_EXTENSION_PDO_MYSQL: 1
+            PHP_EXTENSION_PDO_PGSQL: 0
+            PHP_INI_MEMORY_LIMIT: 1g
+            PHP_INI_ERROR_REPORTING: E_ALL
+            SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
+            STARTUP_COMMAND_1: composer install
+
+    squirrel_queries_postgres:
+        image: postgres:latest
+        container_name: squirrel_queries_postgres
+        environment:
+            POSTGRES_USER: 'user'
+            POSTGRES_PASSWORD: 'password'
+
+    squirrel_queries_mysql:
+        image: mysql/mysql-server:8.0
+        container_name: squirrel_queries_mysql
+        command: --default-authentication-plugin=mysql_native_password
+        environment:
+            MYSQL_ROOT_PASSWORD: 'whatever'
+            MYSQL_DATABASE: 'shop'
+            MYSQL_USER: 'user'
+            MYSQL_PASSWORD: 'password'

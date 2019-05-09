@@ -216,7 +216,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             'fufu' => true,
         ]);
 
-        $this->assertSame(33, $result);
+        $this->assertSame('33', $result);
     }
 
     public function testUpsertPassToLowerLayer()
@@ -225,23 +225,22 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
-            ->shouldReceive('upsert')
+            ->shouldReceive('insertOrUpdate')
             ->once()
             ->with('tableName', [
                 'dada' => 33,
                 'fufu' => true,
-            ], ['dada'])
-            ->andReturn(2);
+            ], ['dada']);
 
         $errorHandler = new DBErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
-        $result = $errorHandler->upsert('tableName', [
+        $errorHandler->insertOrUpdate('tableName', [
             'dada' => 33,
             'fufu' => true,
         ], ['dada']);
 
-        $this->assertSame(2, $result);
+        $this->assertTrue(true);
     }
 
     public function testUpdatePassToLowerLayer()
