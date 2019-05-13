@@ -51,7 +51,7 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         return $results;
     }
 
-    private function replaceResourceWithString(array $result)
+    private function replaceResourceWithString(array $result): array
     {
         foreach ($result as $key => $value) {
             if (\is_array($value)) {

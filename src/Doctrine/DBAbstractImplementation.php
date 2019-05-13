@@ -314,7 +314,11 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $this->connection->quoteIdentifier($identifier);
     }
 
-    private function getFlattenFieldsOption($flattenFields)
+    /**
+     * @param mixed $flattenFields
+     * @return bool
+     */
+    private function getFlattenFieldsOption($flattenFields): bool
     {
         if (!\is_bool($flattenFields) && $flattenFields !== 1 && $flattenFields !== 0) {
             throw DBDebug::createException(
@@ -326,7 +330,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return \boolval($flattenFields);
     }
 
-    private function flattenResults(array $results)
+    private function flattenResults(array $results): array
     {
         // New flattened array
         $list = [];
@@ -449,13 +453,13 @@ abstract class DBAbstractImplementation implements DBRawInterface
         array $row = [],
         array $indexColumns = [],
         ?array $rowUpdates = null
-    ) {
+    ): void {
         $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
 
         $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Do all queries in a transaction to correctly emulate the UPSERT
-        $this->transaction(function ($tableName, $row, $indexColumns, $rowUpdates) {
+        $this->transaction(function (string $tableName, array $row, array $indexColumns, array $rowUpdates) {
             // Contains all WHERE restrictions for the UPDATE query
             $whereForUpdate = [];
 
@@ -488,7 +492,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }, $tableName, $row, $indexColumns, $rowUpdates);
     }
 
-    protected function validateMandatoryUpsertParameters(string $tableName, array $row, array $indexColumns)
+    protected function validateMandatoryUpsertParameters(string $tableName, array $row, array $indexColumns): void
     {
         // No table name specified
         if (strlen($tableName) === 0) {
@@ -565,7 +569,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     /**
      * @inheritDoc
      */
-    public function setLowerLayer($lowerLayer): void
+    public function setLowerLayer(DBRawInterface $lowerLayer): void
     {
         throw new \LogicException('Lower DBRawInterface layers cannot be set in ' . __METHOD__ .
             ' because we are already at the lowest level of implementation');

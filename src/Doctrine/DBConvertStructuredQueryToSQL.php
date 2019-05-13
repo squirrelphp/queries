@@ -581,7 +581,7 @@ class DBConvertStructuredQueryToSQL
      */
     private function escapeVariablesInSqlPart(string $expression)
     {
-        return \preg_replace_callback('/[:]([^:]+)[:]/si', function ($matches) {
+        return \preg_replace_callback('/[:]([^:]+)[:]/si', function (array $matches): string {
             return ($this->quoteIdentifier)($matches[1]);
         }, $expression) ?? $expression;
     }

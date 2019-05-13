@@ -135,7 +135,7 @@ trait DBPassToLowerLayerTrait
     /**
      * @inheritDoc
      */
-    public function setLowerLayer($lowerLayer): void
+    public function setLowerLayer(DBRawInterface $lowerLayer): void
     {
         $this->lowerLayer = $lowerLayer;
     }

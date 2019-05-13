@@ -26,6 +26,16 @@ interface DBBuilderInterface
 
     public function delete(): DeleteEntries;
 
+    /**
+     * Process $func within a transaction. Any additional arguments after
+     * $func are passed to $func as arguments
+     *
+     * @param callable $func
+     * @param mixed ...$arguments
+     * @return mixed
+     *
+     * @throws DBException Common minimal exception thrown if anything goes wrong
+     */
     public function transaction(callable $func, ...$arguments);
 
     public function getDBInterface(): DBInterface;

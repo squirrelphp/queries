@@ -330,25 +330,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(9, $result);
     }
 
-    public function testLastInsertIdPassToLowerLayer()
-    {
-        // Lower layer mock
-        $lowerLayer = \Mockery::mock(DBRawInterface::class);
-
-        $lowerLayer
-            ->shouldReceive('lastInsertId')
-            ->once()
-            ->with('name')
-            ->andReturn('89');
-
-        $errorHandler = new DBErrorHandler();
-        $errorHandler->setLowerLayer($lowerLayer);
-
-        $result = $errorHandler->lastInsertId('name');
-
-        $this->assertSame('89', $result);
-    }
-
     public function testRedoTransactionAfterDeadlock()
     {
         // Lower layer mock

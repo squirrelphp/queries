@@ -35,6 +35,11 @@
                 "conditions": []
             },
             {
+                "action": "vendor/bin/psalm",
+                "options": [],
+                "conditions": []
+            },
+            {
                 "action": "vendor/bin/phpcs --standard=ruleset.xml --extensions=php --cache src tests",
                 "options": [],
                 "conditions": []

@@ -17,6 +17,7 @@ before_script:
 script:
     - vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
     - vendor/bin/phpstan analyse src --level=7
+    - vendor/bin/psalm
     - vendor/bin/phpcs --standard=ruleset.xml --extensions=php src tests
     - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then ./cc-test-reporter after-build  -t clover --exit-code $TRAVIS_TEST_RESULT; fi
 

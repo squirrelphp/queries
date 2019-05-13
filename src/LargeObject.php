@@ -22,6 +22,9 @@ class LargeObject
         return $this->data;
     }
 
+    /**
+     * @return resource
+     */
     public function getStream()
     {
         /**

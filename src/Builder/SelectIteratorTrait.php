@@ -40,6 +40,9 @@ trait SelectIteratorTrait
         $this->clear();
     }
 
+    /**
+     * @return mixed
+     */
     public function current()
     {
         return $this->lastResult;
@@ -75,7 +78,7 @@ trait SelectIteratorTrait
     /**
      * Clears the result set and resets the class to possibly start over or destroy the object
      */
-    public function clear()
+    public function clear(): void
     {
         if (isset($this->selectReference)) {
             $this->source->clear($this->selectReference);

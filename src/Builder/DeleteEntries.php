@@ -77,7 +77,7 @@ class DeleteEntries
     /**
      * Make sure there is no accidental "delete everything" because WHERE restrictions were forgotten
      */
-    private function accidentalDeleteAllCheck()
+    private function accidentalDeleteAllCheck(): void
     {
         // Make sure there is no accidental "delete everything"
         if (\count($this->where) === 0 && $this->confirmNoWhere !== true) {

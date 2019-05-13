@@ -11,6 +11,7 @@ class DBDebug
      * Create exception with correct backtrace
      *
      * @param string $exceptionClass
+     * @psalm-param class-string $exceptionClass
      * @param string|array $backtraceClasses
      * @param string $message
      * @return \Exception
@@ -63,14 +64,23 @@ class DBDebug
         $parts = \explode('\\', $assignedBacktraceClass);
         $shownClass = \array_pop($parts);
 
-        // Create our own exception with the additional data
-        return new $exceptionClass(
+        // Make sure the provided exception class inherits from Exception, otherwise replace it with Exception
+        if (!\in_array(\Exception::class, \class_parents($exceptionClass)) && $exceptionClass !== \Exception::class) {
+            $exceptionClass = \Exception::class;
+        }
+
+        /**
+         * @var \Exception $exception At this point we know that $exceptionClass inherits from \Exception for sure
+         */
+        $exception = new $exceptionClass(
             $shownClass . $lastInstance['type'] . $lastInstance['function'] .
             '(' . self::sanitizeArguments($lastInstance['args']) . ')',
-            $lastInstance['file'],
-            $lastInstance['line'],
+            $lastInstance['file'] ?? '',
+            $lastInstance['line'] ?? '',
             \str_replace("\n", ' ', $message)
         );
+
+        return $exception;
     }
 
     /**
@@ -119,12 +129,14 @@ class DBDebug
             return \str_replace("\n", '', \var_export($data, true));
         }
 
+        $result = [];
+
         // Go through all values in the array and process them recursively
         foreach ($data as $key => $value) {
             $formattedValue = self::sanitizeData($value);
             $result[] = \is_int($key) ? $formattedValue : "'" . $key . "' => " . $formattedValue;
         }
 
-        return '[' . \implode(', ', $result ?? []) . ']';
+        return '[' . \implode(', ', $result) . ']';
     }
 }

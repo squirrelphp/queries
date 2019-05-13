@@ -94,7 +94,7 @@ class DBErrorHandler implements DBRawInterface
      *
      * @param array $connectionRetries
      */
-    public function setConnectionRetries(array $connectionRetries)
+    public function setConnectionRetries(array $connectionRetries): void
     {
         $this->connectionRetries = \array_map('intval', $connectionRetries);
     }
@@ -104,7 +104,7 @@ class DBErrorHandler implements DBRawInterface
      *
      * @param array $lockRetries
      */
-    public function setLockRetries(array $lockRetries)
+    public function setLockRetries(array $lockRetries): void
     {
         $this->lockRetries = \array_map('intval', $lockRetries);
     }
@@ -301,14 +301,6 @@ class DBErrorHandler implements DBRawInterface
      * @inheritDoc
      */
     public function change(string $query, array $vars = []): int
-    {
-        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function lastInsertId($name = null): string
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }

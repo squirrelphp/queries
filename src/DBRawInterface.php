@@ -22,7 +22,7 @@ interface DBRawInterface extends DBInterface
      * Set DBRawInterface layer beneath the current class, in order to build layers
      * of classes implementing DBRawInterface and which serve different purposes
      *
-     * @param object $lowerLayer
+     * @param DBRawInterface $lowerLayer
      */
-    public function setLowerLayer($lowerLayer): void;
+    public function setLowerLayer(DBRawInterface $lowerLayer): void;
 }
