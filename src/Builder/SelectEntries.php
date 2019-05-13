@@ -156,7 +156,6 @@ class SelectEntries implements \IteratorAggregate
             'where' => $this->where,
             'order' => $this->orderBy,
             'group' => $this->groupBy,
-            'limit' => 1,
             'offset' => $this->startAt,
             'lock' => $this->blocking,
         ]);

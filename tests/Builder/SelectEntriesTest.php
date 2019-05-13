@@ -177,7 +177,6 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
                     'field1',
                     'field6' => 'somefield',
                 ],
-                'limit' => 1,
                 'offset' => 13,
                 'lock' => true,
             ])

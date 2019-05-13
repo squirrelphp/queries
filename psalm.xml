@@ -13,6 +13,10 @@
     </projectFiles>
 
     <issueHandlers>
-        <MissingConstructor errorLevel="info" />
+        <MissingConstructor>
+            <errorLevel type="suppress">
+                <file name="src/DBPassToLowerLayerTrait.php" />
+            </errorLevel>
+        </MissingConstructor>
     </issueHandlers>
 </psalm>

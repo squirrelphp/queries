@@ -31,6 +31,7 @@ interface DBInterface
      *
      * @param string|array $query SQL query as a string, with ? as variable placeholders if necessary
      *                            or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array,field?:string,tables?:array,table?:string,where?:array,group?:array,order?:array,limit?:int,offset?:int,lock?:bool} $query
      * @param array $vars Query variables, replaces ? with these variables in order
      * @return DBSelectQueryInterface Query result to use with fetch, fetchAll, clear
      *
@@ -62,6 +63,7 @@ interface DBInterface
      *
      * @param string|array $query SQL query as a string, with ? as variable placeholders if necessary
      *                            or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array,field?:string,tables?:array,table?:string,where?:array,group?:array,order?:array,lock?:bool} $query
      * @param array $vars Query variables, replaces ? with these variables in order
      * @return array|null Table row as an associative array, or null if no entry was found
      *
@@ -74,6 +76,7 @@ interface DBInterface
      *
      * @param string|array $query SQL query as a string, with ? as variable placeholders if necessary
      *                            or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array,field?:string,tables?:array,table?:string,where?:array,group?:array,order?:array,limit?:int,offset?:int,lock?:bool,flattenFields?:bool} $query
      * @param array $vars Query variables, replaces ? with these variables in order
      * @return array List of table rows, each entry as an associate array for one row
      *
@@ -85,7 +88,7 @@ interface DBInterface
      * Insert a row into a table with the given names and values
      *
      * @param string $tableName Name of the table
-     * @param array $row Name and value pairs to insert into the table
+     * @param array<string, mixed> $row Name and value pairs to insert into the table
      * @param string $autoIncrementIndex Index of an automatically generated value that should be returned
      * @return string|null If $autoIncrementIndex is empty, return null, otherwise return the auto increment value
      *
@@ -104,7 +107,7 @@ interface DBInterface
      * Others/ANSI: MERGE (see https://en.wikipedia.org/wiki/Merge_(SQL))
      *
      * @param string $tableName Name of the table
-     * @param array $row Row to insert, keys are column names, values are the data
+     * @param array<string, mixed> $row Row to insert, keys are column names, values are the data
      * @param string[] $indexColumns Index columns which encompass the unique index
      * @param array|null $rowUpdates Fields to update if entry already exists, default is all non-index field entries
      *
@@ -116,6 +119,7 @@ interface DBInterface
      * Execute an update query and return number of affected rows
      *
      * @param array $query Structured query parts
+     * @psalm-param array{changes?:array,tables?:array,table?:string,where?:array,order?:array,limit?:int} $query
      * @return int Number of affected rows
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
