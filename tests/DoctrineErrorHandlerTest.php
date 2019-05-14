@@ -251,30 +251,20 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
         $lowerLayer
             ->shouldReceive('update')
             ->once()
-            ->with([
-                'table' => 'blobs.aa_sexy',
-                'changes' => [
-                    'anyfieldname' => 'nicevalue',
-                ],
-                'where' => [
-                    'blabla' => 5,
-                ],
-                'limit' => 13,
+            ->with('blobs.aa_sexy', [
+                'anyfieldname' => 'nicevalue',
+            ], [
+                'blabla' => 5,
             ])
             ->andReturn(7);
 
         $errorHandler = new DBErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
-        $result = $errorHandler->update([
-            'table' => 'blobs.aa_sexy',
-            'changes' => [
-                'anyfieldname' => 'nicevalue',
-            ],
-            'where' => [
-                'blabla' => 5,
-            ],
-            'limit' => 13,
+        $result = $errorHandler->update('blobs.aa_sexy', [
+            'anyfieldname' => 'nicevalue',
+        ], [
+            'blabla' => 5,
         ]);
 
         $this->assertSame(7, $result);

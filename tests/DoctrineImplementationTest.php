@@ -408,7 +408,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn(33);
 
         // Call the update
-        $results = $this->db->update($query);
+        $results = $this->db->update($query['table'], $query['changes'], $query['where']);
 
         // Make sure we received the right results
         $this->assertSame(33, $results);
@@ -1491,7 +1491,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query . ' LIMIT 13'))
+            ->with(\Mockery::mustBe($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -1513,15 +1513,10 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('closeCursor')
             ->once();
 
-        $result = $this->db->update([
-            'table' => 'blobs.aa_sexy',
-            'changes' => [
-                'anyfieldname' => 'nicevalue',
-            ],
-            'where' => [
-                'blabla' => 5,
-            ],
-            'limit' => 13,
+        $result = $this->db->update('blobs.aa_sexy', [
+            'anyfieldname' => 'nicevalue',
+        ], [
+            'blabla' => 5,
         ]);
 
         $this->assertEquals(33, $result);
@@ -1561,16 +1556,12 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('closeCursor')
             ->once();
 
-        $result = $this->db->update([
-            'table' => 'blobs.aa_sexy',
-            'changes' => [
-                'anyfieldname' => 'nicevalue',
-                'nullentry' => null,
-                'active' => true,
-            ],
-            'where' => [
-                'blabla' => 5,
-            ],
+        $result = $this->db->update('blobs.aa_sexy', [
+            'anyfieldname' => 'nicevalue',
+            'nullentry' => null,
+            'active' => true,
+        ], [
+            'blabla' => 5,
         ]);
 
         $this->assertEquals(33, $result);
@@ -2164,12 +2155,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->update([
-            'changes' => [],
-            'table' => 'blobs.aa_sexy',
-            'where' => [
-                'blabla' => 5,
-            ],
+        $this->db->update('blobs.aa_sexy', [], [
+            'blabla' => 5,
         ]);
     }
 
@@ -2178,15 +2165,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->update([
-            'changes' => [
-                new \stdClass(),
-            ],
-            'table' => 'blobs.aa_sexy',
-            'where' => [
-                'blabla' => 5,
-                'dada' => true,
-            ],
+        $this->db->update('blobs.aa_sexy', [new \stdClass()], [
+            'blabla' => 5,
+            'dada' => true,
         ]);
     }
 
@@ -2195,15 +2176,11 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->update([
-            'changes' => [
-                'dada' => new \stdClass(),
-            ],
-            'table' => 'blobs.aa_sexy',
-            'where' => [
-                'blabla' => 5,
-                'dada' => true,
-            ],
+        $this->db->update('blobs.aa_sexy', [
+            'dada' => new \stdClass(),
+        ], [
+            'blabla' => 5,
+            'dada' => true,
         ]);
     }
 
@@ -2212,14 +2189,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->update([
-            'changes' => [
-                'no_assignment',
-            ],
-            'table' => 'blobs.aa_sexy',
-            'where' => [
-                'blabla' => 5,
-            ],
+        $this->db->update('blobs.aa_sexy', ['no_assignment'], [
+            'blabla' => 5,
         ]);
     }
 
@@ -2228,15 +2199,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(DBInvalidOptionException::class);
 
         // Try it with the invalid option
-        $this->db->update([
-            'changes' => [
-                ':no_equal_sign:' => 5,
-            ],
-            'table' => 'blobs.aa_sexy',
-            'where' => [
-                'blabla' => 5,
-            ],
-        ]);
+        $this->db->update('blobs.aa_sexy', [':no_equal_sign:' => 5], ['blabla' => 5]);
     }
 
     public function testInsertOrUpdateEmulationNoIndex()

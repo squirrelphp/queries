@@ -118,13 +118,14 @@ interface DBInterface
     /**
      * Execute an update query and return number of affected rows
      *
-     * @param array $query Structured query parts
-     * @psalm-param array{changes?:array,tables?:array,table?:string,where?:array,order?:array,limit?:int} $query
+     * @param string $tableName Name of the table
+     * @param array $changes List of changes, the SET clauses
+     * @param array $where Restrictions on which rows to update
      * @return int Number of affected rows
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function update(array $query): int;
+    public function update(string $tableName, array $changes, array $where = []): int;
 
     /**
      * Execute a delete query and return number of affected rows
@@ -156,6 +157,16 @@ interface DBInterface
      * @return string
      */
     public function quoteIdentifier(string $identifier): string;
+
+    /**
+     * Quotes all identifiers in an expression (for example a query). Identifiers are found
+     * by being surrounded by colons, for example: "WHERE :user_id: = ?" - user_id would be
+     * quoted in that example
+     *
+     * @param string $expression
+     * @return string
+     */
+    public function quoteExpression(string $expression): string;
 
     /**
      * Get connection object for low-level access when there is no other way of solving something - should

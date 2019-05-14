@@ -46,7 +46,10 @@ abstract class DBAbstractImplementation implements DBRawInterface
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
-        $this->structuredQueryConverter = new DBConvertStructuredQueryToSQL([$this, 'quoteIdentifier']);
+        $this->structuredQueryConverter = new DBConvertStructuredQueryToSQL(
+            [$this, 'quoteIdentifier'],
+            [$this, 'quoteExpression']
+        );
     }
 
     /**
@@ -242,13 +245,29 @@ abstract class DBAbstractImplementation implements DBRawInterface
     /**
      * @inheritDoc
      */
-    public function update(array $query): int
+    public function update(string $tableName, array $changes, array $where = []): int
     {
-        // Convert the structure into a query string and query variables
-        [$queryAsString, $vars] = $this->convertStructuredUpdateToQuery($query);
+        // Changes in update query need to be defined
+        if (\count($changes) === 0) {
+            throw DBDebug::createException(
+                DBInvalidOptionException::class,
+                DBInterface::class,
+                'No "changes" definition'
+            );
+        }
+
+        // Generate changes SQL (SET part)
+        [$changeSQL, $queryValues] = $this->structuredQueryConverter->buildChanges($changes, []);
+
+        // Build the WHERE part of the query
+        [$whereSQL, $queryValues] = $this->structuredQueryConverter->buildWhere($where, $queryValues);
+
+        // Generate query
+        $sql = 'UPDATE ' . $this->quoteIdentifier($tableName) . ' SET ' . $changeSQL .
+            (strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '');
 
         // Call the change function to avoid duplication
-        return $this->change($queryAsString, $vars);
+        return $this->change($sql, $queryValues);
     }
 
     /**
@@ -315,6 +334,16 @@ abstract class DBAbstractImplementation implements DBRawInterface
     }
 
     /**
+     * @inheritDoc
+     */
+    public function quoteExpression(string $expression): string
+    {
+        return \preg_replace_callback('/[:]([^:]+)[:]/si', function (array $matches): string {
+            return $this->quoteIdentifier($matches[1]);
+        }, $expression) ?? $expression;
+    }
+
+    /**
      * @param mixed $flattenFields
      * @return bool
      */
@@ -346,7 +375,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $list;
     }
 
-    private function convertStructuredSelectToQuery(array $select): array
+    protected function convertStructuredSelectToQuery(array $select): array
     {
         // Make sure all options are correctly defined
         $select = $this->structuredQueryConverter->verifyAndProcessOptions([
@@ -402,44 +431,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return [$sql, $queryValues];
     }
 
-    private function convertStructuredUpdateToQuery(array $update): array
-    {
-        // Make sure all options are correctly defined
-        $update = $this->structuredQueryConverter->verifyAndProcessOptions([
-            'changes' => [],
-            'tables' => [],
-            'where' => [],
-            'order' => [],
-            'limit' => 0,
-        ], $update);
-
-        // Build table joining SQL (between UPDATE and SET)
-        [$tableJoinsSQL, $queryValues] = $this->structuredQueryConverter->buildTableJoins($update['tables']);
-
-        // Generate changes SQL (SET part)
-        [$changeSQL, $queryValues] = $this->structuredQueryConverter->buildChanges($update['changes'], $queryValues);
-
-        // Build the WHERE part of the query
-        [$whereSQL, $queryValues] = $this->structuredQueryConverter->buildWhere($update['where'], $queryValues);
-
-        // Build the ORDER BY part of the query if specified
-        if (isset($update['order'])) {
-            $orderSQL = $this->structuredQueryConverter->buildOrderBy($update['order']);
-        }
-
-        // Generate SELECT query
-        $sql = 'UPDATE ' . $tableJoinsSQL . ' SET ' . $changeSQL .
-            (strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '') .
-            (isset($orderSQL) && strlen($orderSQL) > 0 ? ' ORDER BY ' . $orderSQL : '');
-
-        // Add limit for results
-        if (isset($update['limit']) && $update['limit'] > 0) {
-            $sql = $this->connection->getDatabasePlatform()->modifyLimitQuery($sql, $update['limit']);
-        }
-
-        return [$sql, $queryValues];
-    }
-
     /**
      * Emulate an UPSERT with an UPDATE and INSERT query wrapped in a transaction
      *
@@ -476,11 +467,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             }
 
             // Execute UPDATE query and get affected rows
-            $rowsAffected = $this->update([
-                'table' => $tableName,
-                'changes' => $rowUpdates,
-                'where' => $whereForUpdate,
-            ]);
+            $rowsAffected = $this->update($tableName, $rowUpdates, $whereForUpdate);
 
             // Rows were affected, meaning the UPDATE worked / an entry already exists
             if ($rowsAffected > 0) {

@@ -107,6 +107,7 @@ Database support
 This library has support for the three main open-source databases:
 
 - MySQL, all versions (at least 5.5+ is recommended)
+- MariaDB, all versions (MariaDB behaves almost identical to MySQL)
 - SQLite, all versions, although native UPSERT queries are only supported in SQLite 3.24+ (which is included in PHP 7.3+), the functionality is emulated in lower versions
 - Postgres version 9.5 and above, because UPSERT queries were implemented in 9.5
 
@@ -117,7 +118,7 @@ For Postgres there are workarounds to make the BLOB type (called BYTEA in Postgr
 DBInterface - low level interface
 ---------------------------------
 
-### SELECT queries
+### SELECT queries as plain strings
 
 You can write your own SELECT queries with given parameters using the `select` function, then getting results with the `fetch` function and clearing the results with the `clear` function:
 
@@ -241,56 +242,29 @@ $rowsAffected = $db->change('DELETE FROM users WHERE user_id = ? AND first_name 
 $rowsAffected = $db->change('INSERT INTO users (user_id, first_name) SELECT user_id, first_name FROM users_backup');
 ```
 
-It is not recommended to use the `change` function except if you have no other choice - most queries can be done using structured UPDATE, UPSERT, INSERT and DELETE queries. Yet if you need subqueries or other advanced database functionality `change` is your only option.
+It is not recommended to use the `change` function except if you have no other choice - most queries can be done using the specific `update`, `insert`, `insertOrUpdate` and `delete` methods. Yet if you need subqueries or other advanced database functionality `change` is your only option.
 
-### Structured UPDATE queries
+### UPDATE queries
 
-Instead of using change queries, for updates you can use a structured UPDATE query very similar to the structured SELECT query. An example:
+Instead of using change queries, for updates you can use the specialized `update` method. An example:
 
 ```php
-$rowsAffected = $db->update([
-    'changes' => [
-        'fieldname' => 'string',
-        'locationId' => 5,
-    ],
-    'table' => 'tablename',
-    'where' => [
-        'restriction' => 5,
-        'restriction2' => 8,
-    ],
+$rowsAffected = $db->update('tablename', [
+    'fieldname' => 'string',
+    'locationId' => 5,
+], [
+    'restriction' => 5,
+    'restriction2' => 8,
 ]);
 ```
 
-This structured query is identical to the following string query:
+The first argument is the table name, the second argument the list of changes (SET clause in SQL) and the third argument is the list of WHERE restrictions. It is identical to the following string query:
 
 ```php
 $rowsAffected = $db->change('UPDATE ´tablename´ SET ´fieldname´=?,`locationId`=? WHERE ´restriction´=? AND ´restriction2´=?', ['string', 5, 5, 8]);
 ```
 
-Structured UPDATE queries make mistakes less likely and are easier to read. This shows all the possible options:
-
-```php
-$rowsAffected = $db->update([
-    'changes' => [
-        'a.fieldname' => 'some change',
-        'b.locationId' => 5,
-        ':a.counter: = :a.counter: + 1',
-    ],
-    'tables' => ['
-      'tablename a',
-      'othertable b',
-    ],
-    'where' => [
-        ':a.id: = :b.id:',
-        'a.restriction' => 5,
-        ':a.counter: > ?' => 0,
-    ],
-    'order' => [
-        'a.counter' => 'DESC',
-    ],
-    'limit' => 3,
-]);
-```
+You can only update one row at a time (according to the SQL standard), because the options and syntax for multi-table updates vary widely between MySQL, Postgres and SQLite and the overlap is almost non-existent.
 
 ### INSERT
 
@@ -326,11 +300,11 @@ UPSERT (update-or-insert) queries are an addition to SQL, known under different 
 
 In this library we call this type of query `insertOrUpdate`. Such a query tries to insert a row, but if the row already exists it does an update instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT exists to be a faster and easier solution.
 
-PostgreSQL and SQLite need the specific column names which form a unique index (already existing for the table) which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an upsert query.
+PostgreSQL and SQLite need the specific column names which form a unique index in the table which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an UPSERT query.
 
 #### Usage and examples
 
-The first two arguments for the `insertOrUpdate` function are identical to the normal insert function, the third defines the columns which form a unique or primary key for the table in the database. And the last array is the updates to do if the entry already exists in the database, but it is optional.
+The first two arguments for the `insertOrUpdate` function are identical to the normal insert function, the third defines the columns which form a unique index or primary key for the table in the database. And the last array is the list of updates to do if the entry already exists in the database, but it is optional.
 
 An example could be:
 
@@ -376,7 +350,7 @@ This would INSERT with userId and firstName, but if the row already exists, it w
 $db->change('INSERT INTO `users_names` (`userId`,`firstName`) VALUES (?,?) ON DUPLICATE KEY UPDATE `firstName`=?, [5, 'Jane', 'Jane']);
 ```
 
-The most important thing to remember is that you need a unique or primary index involved in an UPSERT query - so you need to know the indexing of the table.
+The most important thing to remember is that you need a unique or primary key index involved in an UPSERT query - so you need to know the indexing of the table.
 
 ### DELETE
 
@@ -394,7 +368,7 @@ The first argument is the name of the table, the second argument the WHERE restr
 $rowsAffected = $db->change('DELETE FROM `users_names` WHERE `userId`=?', [13]);
 ```
 
-The structured WHERE entries follow the same logic/rules as for structured SELECT and UPDATE queries.
+The structured WHERE entries follow the same logic/rules as in the structured SELECT queries and the `update` method.
 
 ### TRANSACTION
 
@@ -417,14 +391,10 @@ $db->transaction(function() use ($db) {
         'tableName' => 'Henry',
     ], 'tableId');
   
-    $db->update([
-        'table' => 'otherTable',
-        'changes' => [
-            'tableName' => 'Henry',
-        ],
-        'where' => [
-            'tableId' => $tableId,
-        ],
+    $db->update('otherTable', [
+        'tableName' => 'Henry',
+    ], [
+        'tableId' => $tableId,
     ]);
 });
 ```
@@ -444,14 +414,10 @@ $db->transaction(function() use ($db) {
         // If this fails, then the error handler will attempt to repeat the outermost
         // transaction function, which is what you would want / expect, so it starts
         // with the Henry insert again
-        $db->update([
-            'table' => 'otherTable',
-            'changes' => [
-                'tableName' => 'Henry',
-            ],
-            'where' => [
-                'tableId' => $tableId,
-            ],
+        $db->update('otherTable', [
+            'tableName' => 'Henry',
+        ], [
+            'tableId' => $tableId,
         ]);
     });
 });
@@ -467,14 +433,10 @@ $db->transaction(function($db, $table, $tableName) {
         'tableName' => 'Henry',
     ], 'tableId');
   
-    $db->update([
-        'table' => 'otherTable',
-        'changes' => [
-            'tableName' => $tableName,
-        ],
-        'where' => [
-            'tableId' => $tableId,
-        ],
+    $db->update('otherTable', [
+        'tableName' => $tableName,
+    ], [
+        'tableId' => $tableId,
     ]);
 }, $db, 'myTable', 'Henry');
 ```
@@ -483,16 +445,24 @@ When using SELECT queries within a transaction you should always remember that t
 
 ### QUOTE IDENTIFIERS
 
-If you want to be safe it is recommended to quote all identifiers (table names and column names) with the DBInterface `quoteIdentifier` function for non-structured `select` and `update` queries.
+If you want to be safe it is recommended to quote all identifiers (table names and column names) with the DBInterface `quoteIdentifier` function for non-structured `select` and `change` queries.
 
 For `insert` and `insertOrUpdate` the quoting is done for you, and for structured queries most of the quoting is done for you, except if you use an expression, where you can just use colons to specify a table or column name.
 
 If you quote all identifiers, then changing database systems (where different reserved keywords might exist) or upgrading a database (where new keywords might be reserved) is easier.
 
-#### Examples
-
 ```php
 $rowsAffected = $db->change('UPDATE ' . $db->quoteIdentifier('users') . ' SET ' . $db->quoteIdentifier('first_name') . ')=? WHERE ' . $db->quoteIdentifier('user_id') . '=?', ['Sandra', 5]);
+```
+
+### QUOTE EXPRESSION
+
+When executing custom `change` or string `select` queries it can be tedious to escape every identifier with `quoteIdentifier`. Instead you can surround all table names and column names with colons in your query and process them with `quoteExpression`.
+
+This means the only colons in the expression must be for table names and columns names, otherwise the results can become unpredictable. Regularly you would never use colons in a SQL query, but make sure to not accidentally include content in your queries which might contain a colon - if you separate the query from the values this is not an issue.
+
+```php
+$rowsAffected = $db->change($db->quoteExpression('UPDATE :users: SET :first_name:=? WHERE :user_id:=?'), ['Sandra', 5]);
 ```
 
 DBBuilderInterface - higher level query builder
@@ -678,9 +648,7 @@ You can use `writeAndReturnNewId` if you are expecting/needing an insert ID (you
 ```php
 $rowsAffected = $dbBuilder
     ->update()
-    ->inTables([
-        'users',
-    ])
+    ->inTable('users')
     ->set([
         'lastLoginDate' => time(),
         ':visits: = :visits: + 1',
@@ -688,11 +656,24 @@ $rowsAffected = $dbBuilder
     ->where([
         'userId' => 33,
     ])
-    ->limitTo(1)
     ->writeAndReturnAffectedNumber();
 ```
 
 You can use `writeAndReturnAffectedNumber` if you are interested in the number of affected/changed rows, or `write` if you do not need that information. Another option which is not shown above is `orderBy`.
+
+If you want to update all rows in a table (and use no WHERE restrictions), you have to specifically state that:
+
+```php
+$rowsAffected = $dbBuilder
+    ->update()
+    ->inTable('users')
+    ->set([
+        'lastLoginDate' => time(),
+        ':visits: = :visits: + 1',
+    ])
+    ->confirmNoWhereRestrictions()
+    ->writeAndReturnAffectedNumber();
+```
 
 ### Insert or Update
 
@@ -746,6 +727,16 @@ $rowsAffected = $dbBuilder
 ```
 
 You can use `writeAndReturnAffectedNumber` if you are interested in the number of affected/changed rows, or `write` if you do not need that information.
+
+If you want to delete all rows in a table (and use no WHERE restrictions), you have to specifically state that:
+
+```php
+$rowsAffected = $dbBuilder
+    ->delete()
+    ->inTable('users')
+    ->confirmNoWhereRestrictions()
+    ->writeAndReturnAffectedNumber();
+```
 
 ### Transaction
 
@@ -879,7 +870,7 @@ $rowsAffected = $db->change('UPDATE sessions SET time_zone = \'Europe/Zurich\' W
 Do it like this: (or use a structured query, see the tip above!)
 
 ```php
-$rowsAffected = $db->update('UPDATE sessions SET time_zone = ? WHERE session_id = ?', [
+$rowsAffected = $db->change('UPDATE sessions SET time_zone = ? WHERE session_id = ?', [
     'Europe/Zurich',
     'zzjEe2Jpksrjxsd05m1tOwnc7LJNV4sV',
 ]);
@@ -896,7 +887,7 @@ There are many advantages to separating the query from its data:
 
 Avoid complicated queries if at all possible. Queries become increasingly complicated if:
 
-- more than two tables are involved
+- more than two tables are involved (or more than one for queries which change something)
 - GROUP BY or HAVING is used
 - subqueries are used
 - database specific features are used (stored procedures, triggers, views, etc.)
@@ -917,8 +908,3 @@ Sometimes a complex query can make more sense, but it should be the rare excepti
 [squirrelphp/entities](https://github.com/squirrelphp/entities) is a library built on top of `squirrelphp/queries` and offers support for entities and repositories while following all the above guidelines.
 
 [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle) is the Symfony bundle integrating entities and repositories into a Symfony project.
-
-Why don't you support X? Why is feature Y not included?
--------------------------------------------------------
-
-This package was built for my needs originally. If you have sensible additional needs which should be considered, please open an issue or make a pull request. Keep in mind that the focus of the DBInterface itself is narrow by design.

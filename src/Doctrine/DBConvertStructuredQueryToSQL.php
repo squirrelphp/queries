@@ -17,9 +17,15 @@ class DBConvertStructuredQueryToSQL
      */
     private $quoteIdentifier;
 
-    public function __construct(callable $quoteIdentifier)
+    /**
+     * @var callable Function to quote table and field names in an expression
+     */
+    private $quoteExpression;
+
+    public function __construct(callable $quoteIdentifier, callable $quoteExpression)
     {
         $this->quoteIdentifier = $quoteIdentifier;
+        $this->quoteExpression = $quoteExpression;
     }
 
     /**
@@ -127,15 +133,6 @@ class DBConvertStructuredQueryToSQL
             );
         }
 
-        // Changes in update query need to be defined
-        if (isset($validOptions['changes']) && \count($sanitizedOptions['changes']) === 0) {
-            throw DBDebug::createException(
-                DBInvalidOptionException::class,
-                DBInterface::class,
-                'No "changes" definition'
-            );
-        }
-
         // Return all processed options and object-to-table information
         return $sanitizedOptions;
     }
@@ -187,7 +184,7 @@ class DBConvertStructuredQueryToSQL
                 || \strpos($field, ')') !== false
                 || \strpos($field, '*') !== false
             ) { // Special characters found, so this is an expression
-                $fieldProcessed = (\strpos($field, ':') !== false ? $this->escapeVariablesInSqlPart($field) : $field);
+                $fieldProcessed = (\strpos($field, ':') !== false ? ($this->quoteExpression)($field) : $field);
 
                 // This is now a special expression
                 $isExpression = true;
@@ -255,7 +252,7 @@ class DBConvertStructuredQueryToSQL
 
                 // Everything else is left as-is - maybe an expression or something we do not understand
             } else { // An expression with : variables
-                $expression = $this->escapeVariablesInSqlPart($expression);
+                $expression = ($this->quoteExpression)($expression);
             }
 
             // Add to list of joined tables
@@ -323,7 +320,7 @@ class DBConvertStructuredQueryToSQL
             } else { // Assignment operator exists in expression
                 // Process variables if any exist in the string
                 if (\strpos($expression, ':') !== false) {
-                    $expression = $this->escapeVariablesInSqlPart($expression);
+                    $expression = ($this->quoteExpression)($expression);
                 }
             }
 
@@ -401,7 +398,7 @@ class DBConvertStructuredQueryToSQL
             ) {
                 // Colons found, which are used to escape variables
                 if (\strpos($expression, ':') !== false) {
-                    $expression = $this->escapeVariablesInSqlPart($expression);
+                    $expression = ($this->quoteExpression)($expression);
                 }
 
                 // Add to list of finished WHERE expressions
@@ -524,7 +521,7 @@ class DBConvertStructuredQueryToSQL
                 || \strpos($expression, ')') !== false
             ) {
                 if ($variableFound === true) {
-                    $expression = $this->escapeVariablesInSqlPart($expression);
+                    $expression = ($this->quoteExpression)($expression);
                 }
             } else { // Expression is just a field name
                 $expression = ($this->quoteIdentifier)($expression);
@@ -571,18 +568,5 @@ class DBConvertStructuredQueryToSQL
         }
 
         return $existingValues;
-    }
-
-    /**
-     * Escape variables (with starting and ending colons, like :variable:)
-     *
-     * @param string $expression
-     * @return string
-     */
-    private function escapeVariablesInSqlPart(string $expression)
-    {
-        return \preg_replace_callback('/[:]([^:]+)[:]/si', function (array $matches): string {
-            return ($this->quoteIdentifier)($matches[1]);
-        }, $expression) ?? $expression;
     }
 }

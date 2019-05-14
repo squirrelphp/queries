@@ -18,10 +18,12 @@ services:
             SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
             SQUIRREL_TEST_POSTGRES: 'postgres://user:password@squirrel_queries_postgres/postgres?charset=UTF-8'
             SQUIRREL_TEST_MYSQL: 'mysql://user:password@squirrel_queries_mysql/shop'
+            SQUIRREL_TEST_MARIADB: 'mysql://user:password@squirrel_queries_mariadb/shop'
             STARTUP_COMMAND_1: composer install
         depends_on:
             - squirrel_queries_postgres
             - squirrel_queries_mysql
+            - squirrel_queries_mariadb
 
     squirrel_queries_73:
         image: thecodingmachine/php:7.3-v2-cli
@@ -52,6 +54,15 @@ services:
         image: mysql/mysql-server:8.0
         container_name: squirrel_queries_mysql
         command: --default-authentication-plugin=mysql_native_password
+        environment:
+            MYSQL_ROOT_PASSWORD: 'whatever'
+            MYSQL_DATABASE: 'shop'
+            MYSQL_USER: 'user'
+            MYSQL_PASSWORD: 'password'
+
+    squirrel_queries_mariadb:
+        image: mariadb:latest
+        container_name: squirrel_queries_mariadb
         environment:
             MYSQL_ROOT_PASSWORD: 'whatever'
             MYSQL_DATABASE: 'shop'

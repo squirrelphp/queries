@@ -27,13 +27,7 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->db
             ->shouldReceive('update')
             ->once()
-            ->with([
-                'tables' => [],
-                'changes' => [],
-                'where' => [],
-                'order' => [],
-                'limit' => 0,
-            ])
+            ->with('', [], [])
             ->andReturn($expectedResult);
 
         $updateBuilder
@@ -52,13 +46,7 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->db
             ->shouldReceive('update')
             ->once()
-            ->with([
-                'tables' => [],
-                'changes' => [],
-                'where' => [],
-                'order' => [],
-                'limit' => 0,
-            ])
+            ->with('', [], [])
             ->andReturn($expectedResult);
 
         $results = $updateBuilder
@@ -77,74 +65,13 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->db
             ->shouldReceive('update')
             ->once()
-            ->with([
-                'tables' => [
-                    'table6',
-                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
-                ],
-                'changes' => [
+            ->with('table6', [
                     'somefield' => 33,
                     ':otherfield: = :otherfield: + 1',
-                ],
-                'where' => [
-                    'g.somefield' => 33,
-                    'multipleValues' => [3,66],
-                ],
-                'order' => [
-                    'somefield' => 'DESC',
-                ],
-                'limit' => 4,
-            ])
-            ->andReturn($expectedResult);
-
-        $results = $updateBuilder
-            ->inTables([
-                'table6',
-                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
-            ])
-            ->set([
-                'somefield' => 33,
-                ':otherfield: = :otherfield: + 1',
-            ])
-            ->where([
-                'g.somefield' => 33,
-                'multipleValues' => [3,66],
-            ])
-            ->orderBy([
-                'somefield' => 'DESC',
-            ])
-            ->limitTo(4)
-            ->writeAndReturnAffectedNumber();
-
-        $this->assertSame($expectedResult, $results);
-    }
-
-    public function testGetEntriesSingular()
-    {
-        $updateBuilder = new UpdateEntries($this->db);
-
-        $expectedResult = 33;
-
-        $this->db
-            ->shouldReceive('update')
-            ->once()
-            ->with([
-                'tables' => [
-                    'table6',
-                ],
-                'changes' => [
+                ], [
                     'somefield' => 33,
-                    ':otherfield: = :otherfield: + 1',
-                ],
-                'where' => [
-                    'g.somefield' => 33,
                     'multipleValues' => [3,66],
-                ],
-                'order' => [
-                    'somefield',
-                ],
-                'limit' => 4,
-            ])
+                ])
             ->andReturn($expectedResult);
 
         $results = $updateBuilder
@@ -154,11 +81,9 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
                 ':otherfield: = :otherfield: + 1',
             ])
             ->where([
-                'g.somefield' => 33,
+                'somefield' => 33,
                 'multipleValues' => [3,66],
             ])
-            ->orderBy('somefield')
-            ->limitTo(4)
             ->writeAndReturnAffectedNumber();
 
         $this->assertSame($expectedResult, $results);
@@ -175,13 +100,7 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->db
             ->shouldReceive('update')
             ->once()
-            ->with([
-                'tables' => [],
-                'changes' => [],
-                'where' => [],
-                'order' => [],
-                'limit' => 0,
-            ])
+            ->with('', [], [])
             ->andReturn($expectedResult);
 
         $updateBuilder->write();

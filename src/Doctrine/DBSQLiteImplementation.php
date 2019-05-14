@@ -23,4 +23,16 @@ class DBSQLiteImplementation extends DBPostgreSQLImplementation
             parent::insertOrUpdate($tableName, $row, $indexColumns, $rowUpdates);
         }
     }
+
+    protected function convertStructuredSelectToQuery(array $select): array
+    {
+        [$sql, $queryValues] = parent::convertStructuredSelectToQuery($select);
+
+        // SQLite does not support ... FOR UPDATE and it is not needed, so we remove it
+        if (($select['lock'] ?? false) === true) {
+            $sql = substr($sql, 0, -11);
+        }
+
+        return [$sql, $queryValues];
+    }
 }

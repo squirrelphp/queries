@@ -230,22 +230,14 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
 
     public function testUpdate()
     {
-        // Variables to pass to the function
-        $query = [
-            'table' => 'dada',
-            'fields' => [
-                'dadaism',
-            ],
-        ];
-
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('update')
-            ->with(\Mockery::mustBe($query))
+            ->with('dada', ['dada' => 5], ['mumu' => 7])
             ->andReturn(7);
 
         // Make the trait function call
-        $return = $this->dbLowerLayerObject->update($query);
+        $return = $this->dbLowerLayerObject->update('dada', ['dada' => 5], ['mumu' => 7]);
 
         // Check the result
         $this->assertSame(7, $return);
@@ -327,6 +319,21 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
 
         // Check the result
         $this->assertSame('"dada"', $return);
+    }
+
+    public function testQuoteExpression()
+    {
+        // What we expect to be called with the lower layer
+        $this->dbRawObject
+            ->shouldReceive('quoteExpression')
+            ->with(\Mockery::mustBe('WHERE :dada:'))
+            ->andReturn('WHERE "dada"');
+
+        // Make the trait function call
+        $return = $this->dbLowerLayerObject->quoteExpression('WHERE :dada:');
+
+        // Check the result
+        $this->assertSame('WHERE "dada"', $return);
     }
 
     public function testChangeTransaction()

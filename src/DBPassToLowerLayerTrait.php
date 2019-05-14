@@ -87,9 +87,9 @@ trait DBPassToLowerLayerTrait
     /**
      * @inheritDoc
      */
-    public function update(array $query): int
+    public function update(string $tableName, array $changes, array $where = []): int
     {
-        return $this->lowerLayer->update($query);
+        return $this->lowerLayer->update($tableName, $changes, $where);
     }
 
     /**
@@ -114,6 +114,14 @@ trait DBPassToLowerLayerTrait
     public function quoteIdentifier(string $identifier): string
     {
         return $this->lowerLayer->quoteIdentifier($identifier);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function quoteExpression(string $expression): string
+    {
+        return $this->lowerLayer->quoteExpression($expression);
     }
 
     /**

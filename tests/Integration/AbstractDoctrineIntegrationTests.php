@@ -14,7 +14,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     abstract protected static function initializeDatabaseAndGetConnection(): ?DBInterface;
 
-    protected static function waitUntilDatabaseReady($host, $port)
+    protected static function waitUntilDatabaseReady(string $host, int $port): void
     {
         $maxSleep = 60;
 
@@ -222,13 +222,8 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             'create_date' => '486749356',
         ];
 
-        $rowsAffected = self::$db->update([
-            'table' => 'account',
-            'changes' => $accountData,
-            'where' => [
-                'user_id' => 2,
-            ],
-        ]);
+        // UPDATE where changes are made and we should get one affected row
+        $rowsAffected = self::$db->update('account', $accountData, ['user_id' => 2]);
 
         $this->assertEquals(1, $rowsAffected);
 
@@ -257,15 +252,119 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
         $accountData['picture'] = new LargeObject(\hex2bin(\md5('dadaism')));
 
-        $rowsAffected = self::$db->update([
+        // UPDATE where we do not change anything and test if we still get 1 as $rowsAffected
+        $rowsAffected = self::$db->update('account', $accountData, ['user_id' => 2]);
+
+        $this->assertEquals(1, $rowsAffected);
+    }
+
+    public function testSelect()
+    {
+        if (self::$db === null) {
+            return;
+        }
+
+        $accountData = [
+            'user_id' => 2,
+            'username' => 'John',
+            'password' => 'othersecret',
+            'email' => 'supi@mary.com',
+            'phone' => null,
+            'birthdate' => '1984-05-08',
+            'balance' => 800,
+            'description' => 'I am dynamicer and nicer!',
+            'picture' => \hex2bin(\md5('dadaism')),
+            'active' => true,
+            'create_date' => 486749356,
+        ];
+
+        $rowData = self::$db->fetchOne([
             'table' => 'account',
-            'changes' => $accountData,
             'where' => [
                 'user_id' => 2,
             ],
         ]);
 
-        $this->assertEquals(1, $rowsAffected);
+        $rowData['user_id'] = \intval($rowData['user_id']);
+        $rowData['active'] = \boolval($rowData['active']);
+        $rowData['create_date'] = \intval($rowData['create_date']);
+        $rowData['balance'] = \round($rowData['balance'], 2);
+
+        $this->assertEquals($accountData, $rowData);
+    }
+
+    public function testSelectFieldsWithAlias()
+    {
+        if (self::$db === null) {
+            return;
+        }
+
+        $accountData = [
+            'id' => 2,
+            'birthday' => '1984-05-08',
+            'active' => true,
+        ];
+
+        $rowData = self::$db->fetchOne([
+            'table' => 'account',
+            'fields' => [
+                'id' => 'user_id',
+                'birthday' => 'birthdate',
+                'active',
+            ],
+            'where' => [
+                'user_id' => 2,
+            ],
+        ]);
+
+        $rowData['id'] = \intval($rowData['id']);
+        $rowData['active'] = \boolval($rowData['active']);
+
+        $this->assertEquals($accountData, $rowData);
+    }
+
+    public function testTransactionSelectAndUpdate()
+    {
+        if (self::$db === null) {
+            return;
+        }
+
+        self::$db->transaction(function () {
+            $accountData = [
+                'id' => 2,
+                'birthday' => '1984-05-08',
+                'active' => true,
+            ];
+
+            $rowData = self::$db->fetchOne([
+                'table' => 'account',
+                'fields' => [
+                    'id' => 'user_id',
+                    'birthday' => 'birthdate',
+                    'active',
+                ],
+                'where' => [
+                    'active' => true,
+                ],
+                'order' => [
+                    'user_id' => 'DESC',
+                ],
+                'limit' => 1,
+                'offset' => 0,
+                'lock' => true,
+            ]);
+
+            $rowData['id'] = \intval($rowData['id']);
+            $rowData['active'] = \boolval($rowData['active']);
+
+            $this->assertEquals($accountData, $rowData);
+
+            self::$db->update('account', [
+                'active' => false,
+            ], [
+                'user_id' => $rowData['id'],
+            ]);
+        });
     }
 
     public function testDelete()
