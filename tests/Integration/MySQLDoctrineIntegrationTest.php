@@ -26,8 +26,13 @@ class MySQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
             ],
         ]);
 
-        // Create our table
-        $sql = 'CREATE TABLE account(
+        // Create implementation layer
+        return new DBMySQLImplementation($dbalConnection);
+    }
+
+    protected static function createAccountTableQuery(): string
+    {
+        return 'CREATE TABLE account(
                   user_id INT AUTO_INCREMENT,
                   username VARCHAR (50) NOT NULL,
                   password VARCHAR (50) NOT NULL,
@@ -42,11 +47,6 @@ class MySQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                   PRIMARY KEY (user_id),
                   UNIQUE (email)
                 ) ENGINE InnoDB;';
-        $statement = $dbalConnection->prepare($sql);
-        $statement->execute();
-
-        // Create a MySQL implementation layer
-        return new DBMySQLImplementation($dbalConnection);
     }
 
     public function testInsertNoLargeObject()

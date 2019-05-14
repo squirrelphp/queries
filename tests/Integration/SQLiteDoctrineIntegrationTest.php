@@ -22,8 +22,13 @@ class SQLiteDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
             ],
         ]);
 
-        // Create our table
-        $sql = 'CREATE TABLE account(
+        // Create implementation layer
+        return new DBSQLiteImplementation($dbalConnection);
+    }
+
+    protected static function createAccountTableQuery(): string
+    {
+        return 'CREATE TABLE account(
                   user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                   username VARCHAR (50) NOT NULL,
                   password VARCHAR (50) NOT NULL,
@@ -36,11 +41,6 @@ class SQLiteDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                   active BOOLEAN,
                   create_date INTEGER NOT NULL
                 );';
-        $statement = $dbalConnection->prepare($sql);
-        $statement->execute();
-
-        // Create a MySQL implementation layer
-        return new DBSQLiteImplementation($dbalConnection);
     }
 
     public function testInsertNoLargeObject()
