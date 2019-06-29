@@ -14,14 +14,14 @@ class DBDebug
      * @psalm-param class-string $exceptionClass
      * @param string|array $backtraceClasses
      * @param string $message
-     * @param \Exception|null $previousException
+     * @param \Throwable|null $previousException
      * @return \Exception
      */
     public static function createException(
         string $exceptionClass,
         $backtraceClasses,
         string $message,
-        ?\Exception $previousException = null
+        ?\Throwable $previousException = null
     ) {
         // Convert backtrace class to an array if it is a string
         if (\is_string($backtraceClasses)) {
