@@ -14,10 +14,15 @@ class DBDebug
      * @psalm-param class-string $exceptionClass
      * @param string|array $backtraceClasses
      * @param string $message
+     * @param \Exception|null $previousException
      * @return \Exception
      */
-    public static function createException(string $exceptionClass, $backtraceClasses, string $message)
-    {
+    public static function createException(
+        string $exceptionClass,
+        $backtraceClasses,
+        string $message,
+        ?\Exception $previousException = null
+    ) {
         // Convert backtrace class to an array if it is a string
         if (\is_string($backtraceClasses)) {
             $backtraceClasses = [$backtraceClasses];
@@ -77,7 +82,9 @@ class DBDebug
             '(' . self::sanitizeArguments($lastInstance['args']) . ')',
             $lastInstance['file'] ?? '',
             $lastInstance['line'] ?? '',
-            \str_replace("\n", ' ', $message)
+            \str_replace("\n", ' ', $message),
+            ( isset($previousException) ? $previousException->getCode() : 0 ),
+            $previousException
         );
 
         return $exception;

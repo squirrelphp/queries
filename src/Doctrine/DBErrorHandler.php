@@ -158,7 +158,7 @@ class DBErrorHandler implements DBRawInterface
 
             // We have exhaused all deadlock retries and it is time to give up
             if (count($lockRetries) === 0) {
-                throw DBDebug::createException(DBLockException::class, DBInterface::class, $e->getMessage());
+                throw DBDebug::createException(DBLockException::class, DBInterface::class, $e->getMessage(), $e);
             }
 
             // Wait for a certain amount of microseconds
@@ -185,7 +185,7 @@ class DBErrorHandler implements DBRawInterface
 
             // Reconnecting was unsuccessful
             if ($connectionRetries === false) {
-                throw DBDebug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage());
+                throw DBDebug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage(), $e);
             }
 
             // Repeat transaction
@@ -205,7 +205,7 @@ class DBErrorHandler implements DBRawInterface
             $this->setTransaction(false);
 
             // Throw DB exception for higher-up context to catch
-            throw DBDebug::createException(DBDriverException::class, DBInterface::class, $e->getMessage());
+            throw DBDebug::createException(DBDriverException::class, DBInterface::class, $e->getMessage(), $e);
         } catch (\Exception | \Throwable $e) { // Other exception, throw it as is, we do not know how to deal with it
             // Attempt to roll back, suppress any possible exceptions
             try {
@@ -333,7 +333,7 @@ class DBErrorHandler implements DBRawInterface
 
             // Reconnecting was unsuccessful
             if ($connectionRetries === false) {
-                throw DBDebug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage());
+                throw DBDebug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage(), $e);
             }
 
             // Repeat our function
@@ -346,7 +346,7 @@ class DBErrorHandler implements DBRawInterface
 
             // We have exhaused all deadlock retries and it is time to give up
             if (\count($lockRetries) === 0) {
-                throw DBDebug::createException(DBLockException::class, DBInterface::class, $e->getMessage());
+                throw DBDebug::createException(DBLockException::class, DBInterface::class, $e->getMessage(), $e);
             }
 
             // Wait for a certain amount of microseconds
@@ -355,7 +355,7 @@ class DBErrorHandler implements DBRawInterface
             // Repeat our function
             return $this->internalCall($name, $arguments, $connectionRetries, $lockRetries);
         } catch (DriverException $e) { // Some other SQL related exception
-            throw DBDebug::createException(DBDriverException::class, DBInterface::class, $e->getMessage());
+            throw DBDebug::createException(DBDriverException::class, DBInterface::class, $e->getMessage(), $e);
         }
     }
 

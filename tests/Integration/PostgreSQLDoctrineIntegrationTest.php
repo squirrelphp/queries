@@ -44,4 +44,39 @@ class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                   create_date INTEGER NOT NULL
                 );';
     }
+
+    public function testSpecialTypes()
+    {
+        if (self::$db === null) {
+            return;
+        }
+
+        self::$db->change('DROP TABLE IF EXISTS locations');
+
+        self::$db->change(
+            'CREATE TABLE locations (
+               current_location POINT,
+               ip_address INET,
+               create_date INTEGER NOT NULL
+             );'
+        );
+
+        self::$db->insert('locations', [
+            'current_location' => '(5,13)',
+            'ip_address' => '212.55.108.55',
+            'create_date' => 34534543,
+        ]);
+
+        $entry = self::$db->fetchOne([
+            'table' => 'locations',
+        ]);
+
+        $entry['create_date'] = \intval($entry['create_date']);
+
+        $this->assertEquals([
+            'current_location' => '(5,13)',
+            'ip_address' => '212.55.108.55',
+            'create_date' => 34534543,
+        ], $entry);
+    }
 }
