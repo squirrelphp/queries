@@ -56,6 +56,9 @@ trait SelectIteratorTrait
         }
     }
 
+    /**
+     * @return mixed
+     */
     public function key()
     {
         return $this->position;
