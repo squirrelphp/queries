@@ -133,6 +133,11 @@ class DBDebug
 
         // All other non-array values are fine
         if (!\is_array($data)) {
+            // If parts of the string are not UTF8 we assume it to be a binary string
+            if (!\mb_check_encoding($data, 'UTF-8')) {
+                return '0x' . \bin2hex($data);
+            }
+
             return \str_replace("\n", '', \var_export($data, true));
         }
 

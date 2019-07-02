@@ -53,9 +53,11 @@
     },
     "scripts": {
         "phpstan": "vendor/bin/phpstan analyse src --level=7",
-        "psalm": "vendor/bin/psalm",
+        "psalm": "vendor/bin/psalm --show-info=false",
+        "psalm_base": "vendor/bin/psalm --set-baseline=psalm-baseline.xml",
         "phpunit": "vendor/bin/phpunit --colors=always",
         "phpcs": "vendor/bin/phpcs --standard=ruleset.xml --extensions=php --cache src tests",
+        "phpcsfix": "vendor/bin/phpcbf --standard=ruleset.xml --extensions=php --cache src tests",
         "codecoverage": "vendor/bin/phpunit --coverage-html tests/_reports"
     }
 }
