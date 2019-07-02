@@ -15,14 +15,14 @@ class DBDebug
      * @param string|array $backtraceClasses
      * @param string $message
      * @param \Throwable|null $previousException
-     * @return \Exception
+     * @return \Throwable
      */
     public static function createException(
         string $exceptionClass,
         $backtraceClasses,
         string $message,
         ?\Throwable $previousException = null
-    ) {
+    ): \Throwable {
         // Convert backtrace class to an array if it is a string
         if (\is_string($backtraceClasses)) {
             $backtraceClasses = [$backtraceClasses];
@@ -69,17 +69,31 @@ class DBDebug
         $parts = \explode('\\', $assignedBacktraceClass);
         $shownClass = \array_pop($parts);
 
-        // Make sure the provided exception class inherits from Exception, otherwise replace it with Exception
-        if (!\in_array(\Exception::class, \class_parents($exceptionClass)) && $exceptionClass !== \Exception::class) {
+        // Make sure the provided exception class inherits from Throwable, otherwise replace it with Exception
+        if (!\in_array(\Throwable::class, \class_implements($exceptionClass))) {
             $exceptionClass = \Exception::class;
         }
 
+        // If we have no DBException child class, we assume the default Exception class constructor is used
+        if (!\in_array(DBException::class, \class_parents($exceptionClass)) && $exceptionClass !== DBException::class) {
+            /**
+             * @var \Throwable $exception At this point we know that $exceptionClass inherits from \Throwable for sure
+             */
+            $exception = new $exceptionClass(
+                \str_replace("\n", ' ', $message),
+                ( isset($previousException) ? $previousException->getCode() : 0 ),
+                $previousException
+            );
+
+            return $exception;
+        }
+
         /**
-         * @var \Exception $exception At this point we know that $exceptionClass inherits from \Exception for sure
+         * @var DBException $exception At this point we know that $exceptionClass inherits from DBException for sure
          */
         $exception = new $exceptionClass(
             $shownClass . $lastInstance['type'] . $lastInstance['function'] .
-            '(' . self::sanitizeArguments($lastInstance['args']) . ')',
+            '(' . self::sanitizeArguments($lastInstance['args'] ?? []) . ')',
             $lastInstance['file'] ?? '',
             $lastInstance['line'] ?? '',
             \str_replace("\n", ' ', $message),
@@ -118,7 +132,7 @@ class DBDebug
     {
         // Convert object to class name
         if (\is_object($data)) {
-            return 'object(' . (new \ReflectionClass($data))->getShortName() . ')';
+            return 'object(' . (new \ReflectionClass($data))->getName() . ')';
         }
 
         // Convert resource to its type name
@@ -146,7 +160,7 @@ class DBDebug
         // Go through all values in the array and process them recursively
         foreach ($data as $key => $value) {
             $formattedValue = self::sanitizeData($value);
-            $result[] = \is_int($key) ? $formattedValue : "'" . $key . "' => " . $formattedValue;
+            $result[] = \is_int($key) ? $key . " => " . $formattedValue : "'" . $key . "' => " . $formattedValue;
         }
 
         return '[' . \implode(', ', $result) . ']';
