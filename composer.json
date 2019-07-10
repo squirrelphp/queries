@@ -20,6 +20,7 @@
     ],
     "require": {
         "php": "^7.2",
+        "squirrelphp/debug": "^0.5",
         "doctrine/dbal": "^2.5"
     },
     "require-dev": {
@@ -39,7 +40,7 @@
         "squirrelphp/entities-bundle": "Automatic integration of squirrelphp/entities in Symfony"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": false
     },
     "autoload": {
         "psr-4": {

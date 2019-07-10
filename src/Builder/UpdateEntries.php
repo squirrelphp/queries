@@ -2,7 +2,7 @@
 
 namespace Squirrel\Queries\Builder;
 
-use Squirrel\Queries\DBDebug;
+use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
 
@@ -82,7 +82,7 @@ class UpdateEntries
     {
         // Make sure there is no accidental "delete everything"
         if (\count($this->where) === 0 && $this->confirmNoWhere !== true) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 [self::class],
                 'No restricting "where" arguments defined for UPDATE' .

@@ -2,7 +2,7 @@
 
 namespace Squirrel\Queries\Doctrine;
 
-use Squirrel\Queries\DBDebug;
+use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
 use Squirrel\Queries\LargeObject;
@@ -56,10 +56,10 @@ class DBConvertStructuredQueryToSQL
         foreach ($options as $optKey => $optVal) {
             // Defined option is not in the list of valid options
             if (!isset($validOptions[$optKey])) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
-                    'Unknown option key ' . DBDebug::sanitizeData($optKey)
+                    'Unknown option key ' . Debug::sanitizeData($optKey)
                 );
             }
 
@@ -68,10 +68,10 @@ class DBConvertStructuredQueryToSQL
                 case 'lock':
                     // Conversion of value does not match the original value, so we have a very wrong type
                     if (!\is_bool($optVal) && $optVal !== 1 && $optVal !== 0) {
-                        throw DBDebug::createException(
+                        throw Debug::createException(
                             DBInvalidOptionException::class,
                             DBInterface::class,
-                            'Option key ' . DBDebug::sanitizeData($optKey)
+                            'Option key ' . Debug::sanitizeData($optKey)
                             . ' had an invalid value which cannot be converted correctly'
                         );
                     }
@@ -82,10 +82,10 @@ class DBConvertStructuredQueryToSQL
                 case 'offset':
                     // Conversion of value does not match the original value, so we have a very wrong type
                     if (\is_bool($optVal) || (!\is_int($optVal) && \strval(\intval($optVal)) !== \strval($optVal))) {
-                        throw DBDebug::createException(
+                        throw Debug::createException(
                             DBInvalidOptionException::class,
                             DBInterface::class,
-                            'Option key ' . DBDebug::sanitizeData($optKey) .
+                            'Option key ' . Debug::sanitizeData($optKey) .
                             ' had an invalid value which cannot be converted correctly'
                         );
                     }
@@ -94,10 +94,10 @@ class DBConvertStructuredQueryToSQL
                     break;
                 default:
                     if (!\is_array($optVal)) {
-                        throw DBDebug::createException(
+                        throw Debug::createException(
                             DBInvalidOptionException::class,
                             DBInterface::class,
-                            'Option key ' . DBDebug::sanitizeData($optKey) . ' had a non-array value'
+                            'Option key ' . Debug::sanitizeData($optKey) . ' had a non-array value'
                         );
                     }
                     break;
@@ -108,7 +108,7 @@ class DBConvertStructuredQueryToSQL
 
         // Make sure tables array was defined
         if (!isset($sanitizedOptions['tables']) || \count($sanitizedOptions['tables']) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No tables specified for query'
@@ -117,7 +117,7 @@ class DBConvertStructuredQueryToSQL
 
         // Limit must be a positive integer if defined
         if (isset($validOptions['limit']) && $sanitizedOptions['limit'] < 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'Below zero "limit" definition'
@@ -126,7 +126,7 @@ class DBConvertStructuredQueryToSQL
 
         // Offset must be a positive integer if defined
         if (isset($validOptions['offset']) && $sanitizedOptions['offset'] < 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'Below zero "offset" definition'
@@ -157,21 +157,21 @@ class DBConvertStructuredQueryToSQL
         foreach ($fields as $name => $field) {
             // Field always has to be a string
             if (!\is_string($field)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "fields" definition, value for ' .
-                    DBDebug::sanitizeData($name) . ' is not a string'
+                    Debug::sanitizeData($name) . ' is not a string'
                 );
             }
 
             // No expressions allowed in name part!
             if (!\is_int($name) && \strpos($name, ':') !== false) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "fields" definition, name ' .
-                    DBDebug::sanitizeData($name) . ' contains a colon'
+                    Debug::sanitizeData($name) . ' contains a colon'
                 );
             }
 
@@ -231,11 +231,11 @@ class DBConvertStructuredQueryToSQL
 
             // Expression always has to be a string
             if (!\is_string($expression)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "tables" definition, expression is not a string: ' .
-                    DBDebug::sanitizeData($expression)
+                    Debug::sanitizeData($expression)
                 );
             }
 
@@ -286,10 +286,10 @@ class DBConvertStructuredQueryToSQL
 
             // Expression always has to be a string
             if (!\is_string($expression)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
-                    'Invalid "changes" definition, expression is not a string: ' . DBDebug::sanitizeData($expression)
+                    'Invalid "changes" definition, expression is not a string: ' . Debug::sanitizeData($expression)
                 );
             }
 
@@ -297,21 +297,21 @@ class DBConvertStructuredQueryToSQL
             if (\strpos($expression, '=') === false) {
                 // No value was given, we just have a field name without new value
                 if (\is_array($values) && \count($values)===0) {
-                    throw DBDebug::createException(
+                    throw Debug::createException(
                         DBInvalidOptionException::class,
                         DBInterface::class,
                         'Invalid "changes" definition, no value specified: ' .
-                        DBDebug::sanitizeData($expression) . ' => ' . DBDebug::sanitizeData($values)
+                        Debug::sanitizeData($expression) . ' => ' . Debug::sanitizeData($values)
                     );
                 }
 
                 // Colons are not allowed in a variable name
                 if (\strpos($expression, ':') !== false) {
-                    throw DBDebug::createException(
+                    throw Debug::createException(
                         DBInvalidOptionException::class,
                         DBInterface::class,
                         'Invalid "changes" definition, colon used in a field name ' .
-                        'to value assignment: ' . DBDebug::sanitizeData($expression)
+                        'to value assignment: ' . Debug::sanitizeData($expression)
                     );
                 }
 
@@ -334,11 +334,11 @@ class DBConvertStructuredQueryToSQL
 
             // Add new parameters to query parameters - Only scalar values and NULL are allowed
             if (!\is_scalar($values) && !\is_null($values) && !($values instanceof LargeObject)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid query variable specified, it is non-scalar and no large object: ' .
-                    DBDebug::sanitizeData($expression) . ' => ' . DBDebug::sanitizeData($values)
+                    Debug::sanitizeData($expression) . ' => ' . Debug::sanitizeData($values)
                 );
             }
 
@@ -380,11 +380,11 @@ class DBConvertStructuredQueryToSQL
 
             // Expression always has to be a string
             if (!\is_string($expression)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "where" definition, expression is not a string: ' .
-                    DBDebug::sanitizeData($expression)
+                    Debug::sanitizeData($expression)
                 );
             }
 
@@ -406,11 +406,11 @@ class DBConvertStructuredQueryToSQL
             } else { // We assume just a field name to value(s) expression
                 // Values have to be defined for us to make a predefined equals query
                 if (\is_array($values) && \count($values) === 0) {
-                    throw DBDebug::createException(
+                    throw Debug::createException(
                         DBInvalidOptionException::class,
                         DBInterface::class,
                         'Invalid "where" definition, simple expression has no values: ' .
-                        DBDebug::sanitizeData($expression)
+                        Debug::sanitizeData($expression)
                     );
                 }
 
@@ -457,11 +457,11 @@ class DBConvertStructuredQueryToSQL
 
             // Expression always has to be a string
             if (!\is_string($expression)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "group" definition, expression is not a string: ' .
-                    DBDebug::sanitizeData($expression)
+                    Debug::sanitizeData($expression)
                 );
             }
 
@@ -493,21 +493,21 @@ class DBConvertStructuredQueryToSQL
 
             // Expression always has to be a string
             if (!\is_string($expression)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "order" definition, expression is not a string: ' .
-                    DBDebug::sanitizeData($expression)
+                    Debug::sanitizeData($expression)
                 );
             }
 
             // Make sure the order is ASC or DESC - nothing else is allowed
             if (!\is_string($order) || ($order !== 'ASC' && $order !== 'DESC')) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "order" definition, order is not ASC or DESC: ' .
-                    DBDebug::sanitizeData($order)
+                    Debug::sanitizeData($order)
                 );
             }
 
@@ -551,11 +551,11 @@ class DBConvertStructuredQueryToSQL
         foreach ($newValues as $value) {
             // Only scalar values and NULL are allowed
             if (!\is_scalar($value)) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid query variable specified, it is non-scalar: ' .
-                    DBDebug::sanitizeData($newValues)
+                    Debug::sanitizeData($newValues)
                 );
             }
 

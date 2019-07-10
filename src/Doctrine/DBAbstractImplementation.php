@@ -4,7 +4,7 @@ namespace Squirrel\Queries\Doctrine;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\FetchMode;
-use Squirrel\Queries\DBDebug;
+use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBRawInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
@@ -112,7 +112,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Make sure we have a valid DBSelectQuery object
         if (!($selectQuery instanceof DBSelectQuery)) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'Invalid select query class provided'
@@ -133,7 +133,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Make sure we have a valid DBSelectQuery object
         if (!($selectQuery instanceof DBSelectQuery)) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'Invalid select query class provided'
@@ -196,7 +196,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // No table name specified
         if (strlen($tableName) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No table name specified for insert'
@@ -249,7 +249,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // Changes in update query need to be defined
         if (\count($changes) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No "changes" definition'
@@ -277,7 +277,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // No table name specified
         if (strlen($tableName) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No table name specified for delete'
@@ -350,10 +350,10 @@ abstract class DBAbstractImplementation implements DBRawInterface
     private function getFlattenFieldsOption($flattenFields): bool
     {
         if (!\is_bool($flattenFields) && $flattenFields !== 1 && $flattenFields !== 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'flattenFields set to a non-boolean value: ' . DBDebug::sanitizeData($flattenFields)
+                'flattenFields set to a non-boolean value: ' . Debug::sanitizeData($flattenFields)
             );
         }
         return \boolval($flattenFields);
@@ -483,7 +483,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         // No table name specified
         if (strlen($tableName) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No table name specified for upsert'
@@ -492,7 +492,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // No insert row specified
         if (count($row) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No insert data specified for upsert for table "' . $tableName . '"'
@@ -501,7 +501,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // No index specified
         if (count($indexColumns) === 0) {
-            throw DBDebug::createException(
+            throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
                 'No index specified for upsert for table "' . $tableName . '"'
@@ -511,7 +511,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         // Make sure the index columns also exist in the insert row
         foreach ($indexColumns as $fieldName) {
             if (!isset($row[$fieldName])) {
-                throw DBDebug::createException(
+                throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Index values are missing in insert row values'
