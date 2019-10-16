@@ -10,7 +10,6 @@ namespace Squirrel\Queries\Doctrine;
 class DBSQLiteImplementation extends DBPostgreSQLImplementation
 {
     /**
-     * @inheritDoc
      * @codeCoverageIgnore
      */
     public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void

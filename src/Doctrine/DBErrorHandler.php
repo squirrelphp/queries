@@ -58,7 +58,7 @@ class DBErrorHandler implements DBRawInterface
         5000000,  // 5s
         6000000,  // 6s
         7000000,  // 7s
-    ];          // total: 28s 111ms - 10 attempts
+    ]; // total: 28s 111ms - 10 attempts
 
     /**
      * How much time in microseconds we should wait before retrying
@@ -87,7 +87,7 @@ class DBErrorHandler implements DBRawInterface
         5000000,  // 5s
         6000000,  // 6s
         7000000,  // 7s
-    ];          // total: 28s 111ms - 10 attempts
+    ]; // total: 28s 111ms - 10 attempts
 
     /**
      * Change connection retries configuration
@@ -109,9 +109,6 @@ class DBErrorHandler implements DBRawInterface
         $this->lockRetries = \array_map('intval', $lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function transaction(callable $func, ...$arguments)
     {
         // If we are already in a transaction we just run the function
@@ -120,7 +117,12 @@ class DBErrorHandler implements DBRawInterface
         }
 
         // Do a full transaction and try to repeat it if necessary
-        return $this->transactionExecute($func, $arguments, $this->connectionRetries, $this->lockRetries);
+        return $this->transactionExecute(
+            $func,
+            $arguments,
+            $this->connectionRetries,
+            $this->lockRetries
+        );
     }
 
     /**
@@ -158,7 +160,12 @@ class DBErrorHandler implements DBRawInterface
 
             // We have exhaused all deadlock retries and it is time to give up
             if (count($lockRetries) === 0) {
-                throw Debug::createException(DBLockException::class, DBInterface::class, $e->getMessage(), $e);
+                throw Debug::createException(
+                    DBLockException::class, // exception class to create
+                    DBInterface::class, // origin classes to skip when backtracking
+                    $e->getMessage(), // message of the new exception
+                    $e // original/previous exception
+                );
             }
 
             // Wait for a certain amount of microseconds
@@ -185,7 +192,12 @@ class DBErrorHandler implements DBRawInterface
 
             // Reconnecting was unsuccessful
             if ($connectionRetries === false) {
-                throw Debug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage(), $e);
+                throw Debug::createException(
+                    DBConnectionException::class, // exception class to create
+                    DBInterface::class, // origin classes to skip when backtracking
+                    $e->getMessage(), // message of the new exception
+                    $e // original/previous exception
+                );
             }
 
             // Repeat transaction
@@ -205,7 +217,12 @@ class DBErrorHandler implements DBRawInterface
             $this->setTransaction(false);
 
             // Throw DB exception for higher-up context to catch
-            throw Debug::createException(DBDriverException::class, DBInterface::class, $e->getMessage(), $e);
+            throw Debug::createException(
+                DBDriverException::class, // exception class to create
+                DBInterface::class, // origin classes to skip when backtracking
+                $e->getMessage(), // message of the new exception
+                $e // original/previous exception
+            );
         } catch (\Exception | \Throwable $e) { // Other exception, throw it as is, we do not know how to deal with it
             // Attempt to roll back, suppress any possible exceptions
             try {
@@ -225,81 +242,51 @@ class DBErrorHandler implements DBRawInterface
         }
     }
 
-    /**
-     * @inheritDoc
-     */
     public function select($query, array $vars = []): DBSelectQueryInterface
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetch(DBSelectQueryInterface $selectQuery): ?array
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function clear(DBSelectQueryInterface $selectQuery): void
     {
         $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetchOne($query, array $vars = []): ?array
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetchAll($query, array $vars = []): array
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
     {
         $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function update(string $tableName, array $changes, array $where = []): int
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function delete(string $tableName, array $where = []): int
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function change(string $query, array $vars = []): int
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
@@ -317,8 +304,12 @@ class DBErrorHandler implements DBRawInterface
      *
      * @throws DBException
      */
-    protected function internalCall(string $name, array $arguments, array $connectionRetries, array $lockRetries)
-    {
+    protected function internalCall(
+        string $name,
+        array $arguments,
+        array $connectionRetries,
+        array $lockRetries
+    ) {
         // Attempt to call the dbal function
         try {
             return $this->lowerLayer->$name(...$arguments);
@@ -333,7 +324,12 @@ class DBErrorHandler implements DBRawInterface
 
             // Reconnecting was unsuccessful
             if ($connectionRetries === false) {
-                throw Debug::createException(DBConnectionException::class, DBInterface::class, $e->getMessage(), $e);
+                throw Debug::createException(
+                    DBConnectionException::class,
+                    DBInterface::class,
+                    $e->getMessage(),
+                    $e
+                );
             }
 
             // Repeat our function
@@ -346,7 +342,12 @@ class DBErrorHandler implements DBRawInterface
 
             // We have exhaused all deadlock retries and it is time to give up
             if (\count($lockRetries) === 0) {
-                throw Debug::createException(DBLockException::class, DBInterface::class, $e->getMessage(), $e);
+                throw Debug::createException(
+                    DBLockException::class,
+                    DBInterface::class,
+                    $e->getMessage(),
+                    $e
+                );
             }
 
             // Wait for a certain amount of microseconds
@@ -355,7 +356,12 @@ class DBErrorHandler implements DBRawInterface
             // Repeat our function
             return $this->internalCall($name, $arguments, $connectionRetries, $lockRetries);
         } catch (DriverException $e) { // Some other SQL related exception
-            throw Debug::createException(DBDriverException::class, DBInterface::class, $e->getMessage(), $e);
+            throw Debug::createException(
+                DBDriverException::class,
+                DBInterface::class,
+                $e->getMessage(),
+                $e
+            );
         }
     }
 

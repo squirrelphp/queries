@@ -20,11 +20,11 @@
     ],
     "require": {
         "php": "^7.2",
+        "ext-pdo": "*",
         "squirrelphp/debug": "^0.5",
         "doctrine/dbal": "^2.5"
     },
     "require-dev": {
-        "ext-pdo": "*",
         "captainhook/plugin-composer": "^4.0",
         "diablomedia/phpunit-pretty-printer": "^4.0",
         "mockery/mockery": "^1.0",
@@ -40,7 +40,10 @@
         "squirrelphp/entities-bundle": "Automatic integration of squirrelphp/entities in Symfony"
     },
     "config": {
-        "sort-packages": false
+        "sort-packages": false,
+        "platform": {
+            "php": "7.2"
+        }
     },
     "autoload": {
         "psr-4": {

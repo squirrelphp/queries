@@ -11,9 +11,6 @@ use Squirrel\Queries\LargeObject;
  */
 class DBPostgreSQLImplementation extends DBAbstractImplementation
 {
-    /**
-     * @inheritDoc
-     */
     public function fetch(DBSelectQueryInterface $selectQuery): ?array
     {
         $result = parent::fetch($selectQuery);
@@ -25,9 +22,6 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetchOne($query, array $vars = []): ?array
     {
         $result = parent::fetchOne($query, $vars);
@@ -39,9 +33,6 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetchAll($query, array $vars = []): array
     {
         $results = parent::fetchAll($query, $vars);
@@ -64,9 +55,6 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
     {
         [$query, $queryValues] = $this->generateUpsertSQLAndParameters($tableName, $row, $indexColumns, $rowUpdates);

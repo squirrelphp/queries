@@ -10,9 +10,6 @@ use Squirrel\Queries\LargeObject;
  */
 class DBMySQLImplementation extends DBAbstractImplementation
 {
-    /**
-     * @inheritDoc
-     */
     public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
     {
         $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);

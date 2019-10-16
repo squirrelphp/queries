@@ -37,14 +37,20 @@ class DBConvertStructuredQueryToSQL
      */
     public function verifyAndProcessOptions(array $validOptions, array $options)
     {
-        // One table shortcut - convert to "tables" array
-        if (isset($options['table']) && !isset($options['tables']) && isset($validOptions['tables'])) {
+        // Convert "table" to "tables"
+        if (isset($options['table'])
+            && !isset($options['tables'])
+            && isset($validOptions['tables'])
+        ) {
             $options['tables'] = [$options['table']];
             unset($options['table']);
         }
 
-        // One field shortcut - convert to "fields" array
-        if (isset($options['field']) && !isset($options['fields']) && isset($validOptions['fields'])) {
+        // Convert "field" to "fields"
+        if (isset($options['field'])
+            && !isset($options['fields'])
+            && isset($validOptions['fields'])
+        ) {
             $options['fields'] = [$options['field']];
             unset($options['field']);
         }
@@ -81,7 +87,12 @@ class DBConvertStructuredQueryToSQL
                 case 'limit':
                 case 'offset':
                     // Conversion of value does not match the original value, so we have a very wrong type
-                    if (\is_bool($optVal) || (!\is_int($optVal) && \strval(\intval($optVal)) !== \strval($optVal))) {
+                    if (\is_bool($optVal)
+                        || (
+                            !\is_int($optVal)
+                            && \strval(\intval($optVal)) !== \strval($optVal)
+                        )
+                    ) {
                         throw Debug::createException(
                             DBInvalidOptionException::class,
                             DBInterface::class,

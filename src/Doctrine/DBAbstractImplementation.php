@@ -52,9 +52,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         );
     }
 
-    /**
-     * @inheritDoc
-     */
     public function transaction(callable $func, ...$arguments)
     {
         // If we are already in a transaction we just run the function
@@ -79,17 +76,11 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function inTransaction(): bool
     {
         return $this->inTransaction;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function select($query, array $vars = []): DBSelectQueryInterface
     {
         // Convert structured query into a string query with variables
@@ -105,9 +96,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return new DBSelectQuery($statement);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetch(DBSelectQueryInterface $selectQuery): ?array
     {
         // Make sure we have a valid DBSelectQuery object
@@ -126,9 +114,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return ($result === false ? null : $result);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function clear(DBSelectQueryInterface $selectQuery): void
     {
         // Make sure we have a valid DBSelectQuery object
@@ -144,9 +129,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $selectQuery->getStatement()->closeCursor();
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetchOne($query, array $vars = []): ?array
     {
         // Use our internal functions to not repeat ourselves
@@ -158,9 +140,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function fetchAll($query, array $vars = []): array
     {
         // Convert structured query into a string query with variables
@@ -189,9 +168,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
         // No table name specified
@@ -242,9 +218,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $this->connection->lastInsertId($tableName . '_' . $autoIncrementIndex . '_seq');
     }
 
-    /**
-     * @inheritDoc
-     */
     public function update(string $tableName, array $changes, array $where = []): int
     {
         // Changes in update query need to be defined
@@ -270,9 +243,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $this->change($sql, $queryValues);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function delete(string $tableName, array $where = []): int
     {
         // No table name specified
@@ -294,9 +264,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $this->change($query, $queryValues);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function change(string $query, array $vars = []): int
     {
         // Prepare and execute query
@@ -325,17 +292,11 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $result;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function quoteIdentifier(string $identifier): string
     {
         return $this->connection->quoteIdentifier($identifier);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function quoteExpression(string $expression): string
     {
         return \preg_replace_callback('/[:]([^:]+)[:]/si', function (array $matches): string {
@@ -414,8 +375,10 @@ abstract class DBAbstractImplementation implements DBRawInterface
             (isset($groupSQL) && strlen($groupSQL) > 0 ? ' GROUP BY ' . $groupSQL : '') .
             (isset($orderSQL) && strlen($orderSQL) > 0 ? ' ORDER BY ' . $orderSQL : '');
 
-        // Add limit for results
-        if ((isset($select['limit']) && $select['limit'] > 0) || (isset($select['offset']) && $select['offset'] > 0)) {
+        // Either "limit" or "offset" options were specified
+        if ((isset($select['limit']) && $select['limit'] > 0)
+            || (isset($select['offset']) && $select['offset'] > 0)
+        ) {
             $sql = $this->connection->getDatabasePlatform()->modifyLimitQuery(
                 $sql,
                 $select['limit'] ?? null,
@@ -450,7 +413,12 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Do all queries in a transaction to correctly emulate the UPSERT
-        $this->transaction(function (string $tableName, array $row, array $indexColumns, array $rowUpdates) {
+        $this->transaction(function (
+            string $tableName,
+            array $row,
+            array $indexColumns,
+            array $rowUpdates
+        ) {
             // Contains all WHERE restrictions for the UPDATE query
             $whereForUpdate = [];
 
@@ -479,8 +447,11 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }, $tableName, $row, $indexColumns, $rowUpdates);
     }
 
-    protected function validateMandatoryUpsertParameters(string $tableName, array $row, array $indexColumns): void
-    {
+    protected function validateMandatoryUpsertParameters(
+        string $tableName,
+        array $row,
+        array $indexColumns
+    ): void {
         // No table name specified
         if (strlen($tableName) === 0) {
             throw Debug::createException(
@@ -520,8 +491,11 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
     }
 
-    protected function prepareUpsertRowUpdates(?array $rowUpdates, array $rowInsert, array $indexColumns): array
-    {
+    protected function prepareUpsertRowUpdates(
+        ?array $rowUpdates,
+        array $rowInsert,
+        array $indexColumns
+    ): array {
         // No update fields defined, so we assume the table is changed the same way
         // as with the insert
         if ($rowUpdates === null) {
@@ -537,25 +511,16 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $rowUpdates;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function setTransaction(bool $inTransaction): void
     {
         $this->inTransaction = $inTransaction;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getConnection(): object
     {
         return $this->connection;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function setLowerLayer(DBRawInterface $lowerLayer): void
     {
         throw new \LogicException('Lower DBRawInterface layers cannot be set in ' . __METHOD__ .

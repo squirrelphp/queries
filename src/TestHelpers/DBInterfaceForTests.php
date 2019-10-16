@@ -9,9 +9,6 @@ use Squirrel\Queries\DBInterface;
  */
 abstract class DBInterfaceForTests implements DBInterface
 {
-    /**
-     * @inheritDoc
-     */
     public function quoteIdentifier(string $identifier): string
     {
         if (strpos($identifier, ".") !== false) {

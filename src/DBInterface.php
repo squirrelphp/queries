@@ -94,7 +94,11 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string;
+    public function insert(
+        string $tableName,
+        array $row = [],
+        string $autoIncrementIndex = ''
+    ): ?string;
 
     /**
      * Insert a new entry or update existing entry (also called UPSERT: update-or-insert)
@@ -113,7 +117,12 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void;
+    public function insertOrUpdate(
+        string $tableName,
+        array $row = [],
+        array $indexColumns = [],
+        ?array $rowUpdates = null
+    ): void;
 
     /**
      * Execute an update query and return number of affected rows
@@ -125,7 +134,11 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function update(string $tableName, array $changes, array $where = []): int;
+    public function update(
+        string $tableName,
+        array $changes,
+        array $where = []
+    ): int;
 
     /**
      * Execute a delete query and return number of affected rows
