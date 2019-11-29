@@ -7,7 +7,11 @@ services:
         working_dir: /usr/src/app
         command: ["vendor/bin/phpunit", "--colors=always", "--filter", "Integration"]
         volumes:
-            - .:/usr/src/app
+            - ./src:/usr/src/app/src
+            - ./tests:/usr/src/app/tests
+            - ./composer.json:/usr/src/app/composer.json
+            - ./phpunit.xml.dist:/usr/src/app/phpunit.xml.dist
+            - ./vendor-bin:/usr/src/app/vendor-bin
         environment:
             PHP_EXTENSION_APCU: 0
             PHP_EXTENSION_REDIS: 0
@@ -19,7 +23,8 @@ services:
             SQUIRREL_TEST_POSTGRES: 'postgres://user:password@squirrel_queries_postgres/postgres?charset=UTF-8'
             SQUIRREL_TEST_MYSQL: 'mysql://user:password@squirrel_queries_mysql/shop'
             SQUIRREL_TEST_MARIADB: 'mysql://user:password@squirrel_queries_mariadb/shop'
-            STARTUP_COMMAND_1: composer install
+            STARTUP_COMMAND_1: composer update --no-scripts --quiet
+            STARTUP_COMMAND_2: composer bin all update --quiet
         depends_on:
             - squirrel_queries_postgres
             - squirrel_queries_mysql
@@ -32,7 +37,11 @@ services:
         working_dir: /usr/src/app
         command: ["vendor/bin/phpunit", "--colors=always", "--filter", "SQLiteDoctrineIntegrationTest"]
         volumes:
-            - .:/usr/src/app
+            - ./src:/usr/src/app/src
+            - ./tests:/usr/src/app/tests
+            - ./composer.json:/usr/src/app/composer.json
+            - ./phpunit.xml.dist:/usr/src/app/phpunit.xml.dist
+            - ./vendor-bin:/usr/src/app/vendor-bin
         environment:
             PHP_EXTENSION_APCU: 0
             PHP_EXTENSION_REDIS: 0
@@ -41,7 +50,8 @@ services:
             PHP_INI_MEMORY_LIMIT: 1g
             PHP_INI_ERROR_REPORTING: E_ALL
             SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
-            STARTUP_COMMAND_1: composer install
+            STARTUP_COMMAND_1: composer update --no-scripts --quiet
+            STARTUP_COMMAND_2: composer bin all update --quiet
 
     squirrel_queries_postgres:
         image: postgres:latest
