@@ -20,17 +20,17 @@ class InsertOrUpdateEntry
     private $table = '';
 
     /**
-     * @var array VALUES clauses for the query
+     * @var array<string,mixed> VALUES clauses for the query
      */
     private $values = [];
 
     /**
-     * @var array Unique index fields to determine when to update and when to insert
+     * @var string[] Unique index fields to determine when to update and when to insert
      */
     private $index = [];
 
     /**
-     * @var array SET clauses for the update part of the query
+     * @var array<int|string,mixed> SET clauses for the update part of the query
      */
     private $valuesOnUpdate = [];
 
@@ -45,6 +45,9 @@ class InsertOrUpdateEntry
         return $this;
     }
 
+    /**
+     * @param array<string,mixed> $values
+     */
     public function set(array $values): self
     {
         $this->values = $values;
@@ -52,8 +55,7 @@ class InsertOrUpdateEntry
     }
 
     /**
-     * @param array|string $indexFields
-     * @return InsertOrUpdateEntry
+     * @param string[]|string $indexFields
      */
     public function index($indexFields): self
     {
@@ -66,8 +68,7 @@ class InsertOrUpdateEntry
     }
 
     /**
-     * @param array|string $values
-     * @return InsertOrUpdateEntry
+     * @param array<int|string,mixed>|string $values
      */
     public function setOnUpdate($values): self
     {

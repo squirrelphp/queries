@@ -6,6 +6,8 @@ use Squirrel\Queries\DBInterface;
 
 /**
  * Select query builder as a fluent object - build query and return entries or flattened fields
+ *
+ * @implements \IteratorAggregate<int,array>
  */
 class SelectEntries implements \IteratorAggregate
 {
@@ -15,27 +17,27 @@ class SelectEntries implements \IteratorAggregate
     private $db;
 
     /**
-     * @var array Only retrieve these fields of the tables
+     * @var array<int|string,string> Only retrieve these fields of the tables
      */
     private $fields = [];
 
     /**
-     * @var array
+     * @var array<int|string,mixed>
      */
     private $tables = [];
 
     /**
-     * @var array WHERE restrictions in query
+     * @var array<int|string,mixed> WHERE restrictions in query
      */
     private $where = [];
 
     /**
-     * @var array ORDER BY sorting in query
+     * @var array<int|string,string> ORDER BY sorting in query
      */
     private $orderBy = [];
 
     /**
-     * @var array GROUP BY aggregating in query
+     * @var array<int|string,string> GROUP BY aggregating in query
      */
     private $groupBy = [];
 
@@ -65,6 +67,9 @@ class SelectEntries implements \IteratorAggregate
         return $this;
     }
 
+    /**
+     * @param array<int|string,string> $getTheseFields
+     */
     public function fields(array $getTheseFields): self
     {
         $this->fields = $getTheseFields;
@@ -76,12 +81,18 @@ class SelectEntries implements \IteratorAggregate
         return $this->inTables([$table]);
     }
 
+    /**
+     * @param array<int|string,mixed> $tables
+     */
     public function inTables(array $tables): self
     {
         $this->tables = $tables;
         return $this;
     }
 
+    /**
+     * @param array<int|string,mixed> $whereClauses
+     */
     public function where(array $whereClauses): self
     {
         $this->where = $whereClauses;
@@ -89,7 +100,7 @@ class SelectEntries implements \IteratorAggregate
     }
 
     /**
-     * @param array|string $orderByClauses
+     * @param array<int|string,string>|string $orderByClauses
      * @return SelectEntries
      */
     public function orderBy($orderByClauses): self
@@ -103,7 +114,7 @@ class SelectEntries implements \IteratorAggregate
     }
 
     /**
-     * @param array|string $groupByClauses
+     * @param array<int|string,string>|string $groupByClauses
      * @return SelectEntries
      */
     public function groupBy($groupByClauses): self
@@ -134,6 +145,9 @@ class SelectEntries implements \IteratorAggregate
         return $this;
     }
 
+    /**
+     * @return array<int,array<string,mixed>>
+     */
     public function getAllEntries(): array
     {
         return $this->db->fetchAll([
@@ -148,6 +162,9 @@ class SelectEntries implements \IteratorAggregate
         ]);
     }
 
+    /**
+     * @return array<string,mixed>|null
+     */
     public function getOneEntry(): ?array
     {
         return $this->db->fetchOne([
@@ -161,6 +178,9 @@ class SelectEntries implements \IteratorAggregate
         ]);
     }
 
+    /**
+     * @return array<bool|int|float|string|null>
+     */
     public function getFlattenedFields(): array
     {
         return $this->db->fetchAll([
@@ -176,7 +196,10 @@ class SelectEntries implements \IteratorAggregate
         ]);
     }
 
-    public function getIterator(): \Iterator
+    /**
+     * @return SelectIterator
+     */
+    public function getIterator()
     {
         return new SelectIterator($this->db, [
             'fields' => $this->fields,

@@ -15,12 +15,12 @@ class CountEntries
     private $db;
 
     /**
-     * @var array Explicit connections between the repositories
+     * @var array<int|string,mixed> Explicit connections between the repositories
      */
     private $tables = [];
 
     /**
-     * @var array WHERE restrictions in query
+     * @var array<int|string,mixed> WHERE restrictions in query
      */
     private $where = [];
 
@@ -39,12 +39,18 @@ class CountEntries
         return $this->inTables([$table]);
     }
 
+    /**
+     * @param array<int|string,mixed> $tables
+     */
     public function inTables(array $tables): self
     {
         $this->tables = $tables;
         return $this;
     }
 
+    /**
+     * @param array<int|string,mixed> $whereClauses
+     */
     public function where(array $whereClauses): self
     {
         $this->where = $whereClauses;

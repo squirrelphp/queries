@@ -29,10 +29,9 @@ interface DBInterface
     /**
      * Execute a select query and return an identifier to fetch and clear the result set
      *
-     * @param string|array $query SQL query as a string, with ? as variable placeholders if necessary
-     *                            or an array for a structured SQL query where $vars is not used
-     * @psalm-param string|array{fields?:array,field?:string,tables?:array,table?:string,where?:array,group?:array,order?:array,limit?:int,offset?:int,lock?:bool} $query
-     * @param array $vars Query variables, replaces ? with these variables in order
+     * @param string|array<string,mixed> $query SQL query as a string, with ? as variable placeholders if necessary or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array<int|string,string>,field?:string,tables?:array<int|string,mixed>,table?:string,where?:array<int|string,mixed>,group?:array<int|string,string>,order?:array<int|string,string>,limit?:int,offset?:int,lock?:bool} $query
+     * @param array<int,mixed> $vars Query variables, replaces ? with these variables in order
      * @return DBSelectQueryInterface Query result to use with fetch, fetchAll, clear
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
@@ -43,7 +42,7 @@ interface DBInterface
      * Fetch a row from a previously executed select query
      *
      * @param DBSelectQueryInterface $selectQuery Identifier received from select function
-     * @return array|null Table row as an associative array, or null if no (more) entries exist
+     * @return array<string,mixed>|null Table row as an associative array, or null if no (more) entries exist
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
@@ -61,11 +60,10 @@ interface DBInterface
     /**
      * Fetch one row with a select query and then clear the result set
      *
-     * @param string|array $query SQL query as a string, with ? as variable placeholders if necessary
-     *                            or an array for a structured SQL query where $vars is not used
-     * @psalm-param string|array{fields?:array,field?:string,tables?:array,table?:string,where?:array,group?:array,order?:array,lock?:bool} $query
-     * @param array $vars Query variables, replaces ? with these variables in order
-     * @return array|null Table row as an associative array, or null if no entry was found
+     * @param string|array<string,mixed> $query SQL query as a string, with ? as variable placeholders if necessary or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array<int|string,string>,field?:string,tables?:array<int|string,mixed>,table?:string,where?:array<int|string,mixed>,group?:array<int|string,string>,order?:array<int|string,string>,limit?:int,offset?:int,lock?:bool} $query
+     * @param array<int,mixed> $vars Query variables, replaces ? with these variables in order
+     * @return array<string,mixed>|null Table row as an associative array, or null if no entry was found
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
@@ -74,11 +72,10 @@ interface DBInterface
     /**
      * Fetch all rows with a select query and then clear the result set
      *
-     * @param string|array $query SQL query as a string, with ? as variable placeholders if necessary
-     *                            or an array for a structured SQL query where $vars is not used
-     * @psalm-param string|array{fields?:array,field?:string,tables?:array,table?:string,where?:array,group?:array,order?:array,limit?:int,offset?:int,lock?:bool,flattenFields?:bool} $query
-     * @param array $vars Query variables, replaces ? with these variables in order
-     * @return array List of table rows, each entry as an associate array for one row
+     * @param string|array<string,mixed> $query SQL query as a string, with ? as variable placeholders if necessary or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array<int|string,string>,field?:string,tables?:array<int|string,mixed>,table?:string,where?:array<int|string,mixed>,group?:array<int|string,string>,order?:array<int|string,string>,limit?:int,offset?:int,lock?:bool,flattenFields?:bool} $query
+     * @param array<int,mixed> $vars Query variables, replaces ? with these variables in order
+     * @return array<int,mixed> List of table rows, each entry as an associate array for one row
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
@@ -88,7 +85,7 @@ interface DBInterface
      * Insert a row into a table with the given names and values
      *
      * @param string $tableName Name of the table
-     * @param array<string, mixed> $row Name and value pairs to insert into the table
+     * @param array<string,mixed> $row Name and value pairs to insert into the table
      * @param string $autoIncrementIndex Index of an automatically generated value that should be returned
      * @return string|null If $autoIncrementIndex is empty, return null, otherwise return the auto increment value
      *
@@ -111,9 +108,9 @@ interface DBInterface
      * Others/ANSI: MERGE (see https://en.wikipedia.org/wiki/Merge_(SQL))
      *
      * @param string $tableName Name of the table
-     * @param array<string, mixed> $row Row to insert, keys are column names, values are the data
+     * @param array<string,mixed> $row Row to insert, keys are column names, values are the data
      * @param string[] $indexColumns Index columns which encompass the unique index
-     * @param array|null $rowUpdates Fields to update if entry already exists, default is all non-index field entries
+     * @param array<int|string,mixed>|null $rowUpdates Fields to update if entry already exists, default is all non-index field entries
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
@@ -128,8 +125,8 @@ interface DBInterface
      * Execute an update query and return number of affected rows
      *
      * @param string $tableName Name of the table
-     * @param array $changes List of changes, the SET clauses
-     * @param array $where Restrictions on which rows to update
+     * @param array<int|string,mixed> $changes List of changes, the SET clauses
+     * @param array<int|string,mixed> $where Restrictions on which rows to update
      * @return int Number of affected rows
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
@@ -144,7 +141,7 @@ interface DBInterface
      * Execute a delete query and return number of affected rows
      *
      * @param string $tableName Name of the table
-     * @param array $where Restrictions for the row deletion
+     * @param array<int|string,mixed> $where Restrictions for the row deletion
      * @return int Number of affected rows
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
@@ -155,7 +152,7 @@ interface DBInterface
      * Execute an insert, update or delete query and return number of affected rows
      *
      * @param string $query SQL query as a string, with ? as variable placeholders if necessary
-     * @param array $vars Query variables, replaces ? with these variables in order
+     * @param array<int,mixed> $vars Query variables, replaces ? with these variables in order
      * @return int Number of affected rows
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong

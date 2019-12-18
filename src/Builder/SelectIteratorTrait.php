@@ -48,7 +48,7 @@ trait SelectIteratorTrait
         return $this->lastResult;
     }
 
-    public function next()
+    public function next(): void
     {
         if (isset($this->selectReference)) {
             $this->lastResult = $this->source->fetch($this->selectReference);
@@ -64,12 +64,12 @@ trait SelectIteratorTrait
         return $this->position;
     }
 
-    public function valid()
+    public function valid(): bool
     {
         return ( $this->lastResult === null ? false : true );
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         $this->clear();
 

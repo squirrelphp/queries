@@ -20,7 +20,7 @@ class InsertEntry
     private $table = '';
 
     /**
-     * @var array VALUES clauses for the query
+     * @var array<string,mixed> VALUES clauses for the query
      */
     private $values = [];
 
@@ -35,6 +35,9 @@ class InsertEntry
         return $this;
     }
 
+    /**
+     * @param array<string,mixed> $values
+     */
     public function set(array $values): self
     {
         $this->values = $values;

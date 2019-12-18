@@ -22,12 +22,12 @@ class UpdateEntries
     private $table = '';
 
     /**
-     * @var array SET clauses for the query
+     * @var array<int|string,mixed> SET clauses for the query
      */
     private $changes = [];
 
     /**
-     * @var array WHERE restrictions in query
+     * @var array<int|string,mixed> WHERE restrictions in query
      */
     private $where = [];
 
@@ -47,12 +47,18 @@ class UpdateEntries
         return $this;
     }
 
+    /**
+     * @param array<int|string,mixed> $changes
+     */
     public function set(array $changes): self
     {
         $this->changes = $changes;
         return $this;
     }
 
+    /**
+     * @param array<int|string,mixed> $whereClauses
+     */
     public function where(array $whereClauses): self
     {
         $this->where = $whereClauses;

@@ -7,6 +7,8 @@ use Squirrel\Queries\DBSelectQueryInterface;
 
 /**
  * Iterator returned by SelectEntries to be used in a foreach loop
+ *
+ * @implements \Iterator<int,array>
  */
 class SelectIterator implements \Iterator
 {

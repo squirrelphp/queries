@@ -22,7 +22,7 @@ class DeleteEntries
     private $table = '';
 
     /**
-     * @var array WHERE restrictions in query
+     * @var array<int|string,mixed> WHERE restrictions in query
      */
     private $where = [];
 
@@ -42,6 +42,9 @@ class DeleteEntries
         return $this;
     }
 
+    /**
+     * @param array<int|string,mixed> $whereClauses
+     */
     public function where(array $whereClauses): self
     {
         $this->where = $whereClauses;
