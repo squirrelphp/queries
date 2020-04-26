@@ -9,20 +9,13 @@ use Squirrel\Queries\DBInterface;
  */
 class InsertEntry
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
-
-    /**
-     * @var string
-     */
-    private $table = '';
+    private DBInterface $db;
+    private string $table = '';
 
     /**
      * @var array<string,mixed> VALUES clauses for the query
      */
-    private $values = [];
+    private array $values = [];
 
     public function __construct(DBInterface $db)
     {

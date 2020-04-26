@@ -1,7 +1,7 @@
 Squirrel Queries
 ================
 
-[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) ![PHPStan](https://img.shields.io/badge/style-level%207-success.svg?style=flat-round&label=phpstan) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)  [![PHP Version](https://img.shields.io/packagist/php-v/squirrelphp/queries.svg)](https://packagist.org/packages/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE)
+[![Build Status](https://img.shields.io/travis/com/squirrelphp/queries.svg)](https://travis-ci.com/squirrelphp/queries) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f12e6ef097b4202bf65/test_coverage)](https://codeclimate.com/github/squirrelphp/queries/test_coverage) ![PHPStan](https://img.shields.io/badge/style-level%208-success.svg?style=flat-round&label=phpstan) [![Packagist Version](https://img.shields.io/packagist/v/squirrelphp/queries.svg?style=flat-round)](https://packagist.org/packages/squirrelphp/queries)  [![PHP Version](https://img.shields.io/packagist/php-v/squirrelphp/queries.svg)](https://packagist.org/packages/squirrelphp/queries) [![Software License](https://img.shields.io/badge/license-MIT-success.svg?style=flat-round)](LICENSE)
 
 Provides a slimmed down concise interface for low level database queries and transactions (DBInterface) as well as a query builder to make it easier and more expressive to create queries (DBBuilderInterface). The interfaces are limited to avoid confusion/misuse and encourage fail-safe usage.
 
@@ -40,7 +40,7 @@ If you want to assemble a DBInterface object yourself, something like the follow
     use Squirrel\Queries\DBInterface;
     use Squirrel\Queries\Doctrine\DBErrorHandler;
     use Squirrel\Queries\Doctrine\DBMySQLImplementation;
-    
+
     // Create a doctrine connection
     $dbalConnection = DriverManager::getConnection([
         'url' => 'mysql://user:secret@localhost/mydb',
@@ -50,33 +50,33 @@ If you want to assemble a DBInterface object yourself, something like the follow
             \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,
         ],
     ]);
-    
+
     // Create a MySQL implementation layer
     $implementationLayer = new DBMySQLImplementation($dbalConnection);
-    
+
     // Create an error handler layer
     $errorLayer = new DBErrorHandler();
-    
+
     // Set implementation layer beneath the error layer
     $errorLayer->setLowerLayer($implementationLayer);
-    
+
     // Rename our layered service - this is now our database object
     $db = $errorLayer;
-    
+
     // $db is now useable and can be injected
-    // anywhere you need it. Typehint it with 
+    // anywhere you need it. Typehint it with
     // \Squirrel\Queries\DBInterface
-    
+
     $fetchEntry = function(DBInterface $db) {
         return $db->fetchOne('SELECT * FROM table');
     };
-    
+
     $fetchEntry($db);
-    
+
     // A builder just needs a DBInterface to be created:
-    
+
     $queryBuilder = new DBBuilderInterface($db);
-    
+
     // The query builder generates more readable queries, and
     // helps your IDE in terms of type hints / possible options
     // depending on the query you are doing
@@ -90,13 +90,13 @@ If you want to assemble a DBInterface object yourself, something like the follow
           'name' => 'Robert',
         ])
         ->getAllEntries();
-    
+
     // If you want to add more layers, you can create a
     // class which implements DBRawInterface and includes
     // the DBPassToLowerLayer trait and then just overwrite
     // the functions you want to change, and then connect
     // it to the other layers through setLowerLayer
-    
+
     // It is also a good idea to catch \Squirrel\Queries\DBException
     // in your application in case of a DB error so it
     // can be handled gracefully
@@ -114,7 +114,7 @@ This library has support for the three main open-source databases:
 The functionality in this library has been tested against real versions of these databases to make sure it works, although there might be edge cases which warrant adjustments. If you find any issues please report them.
 
 For Postgres there are workarounds to make the BLOB type (called BYTEA in Postgres) easier to deal with, so handling BLOBs is almost as easy as with MySQL/SQLite.
-    
+
 DBInterface - low level interface
 ---------------------------------
 
@@ -390,7 +390,7 @@ $db->transaction(function() use ($db) {
     $tableId = $db->insert('myTable', [
         'tableName' => 'Henry',
     ], 'tableId');
-  
+
     $db->update('otherTable', [
         'tableName' => 'Henry',
     ], [
@@ -406,7 +406,7 @@ $db->transaction(function() use ($db) {
     $tableId = $db->insert('myTable', [
         'tableName' => 'Henry',
     ], 'tableId');
-  
+
     // This still does exactly the same as in the previous example, because the
     // function will be executed without a "new" transaction being started,
     // the existing one just continues
@@ -432,7 +432,7 @@ $db->transaction(function($db, $table, $tableName) {
     $tableId = $db->insert('myTable', [
         'tableName' => 'Henry',
     ], 'tableId');
-  
+
     $db->update('otherTable', [
         'tableName' => $tableName,
     ], [
@@ -529,7 +529,7 @@ $selectQuery = $dbBuilder
     ->limitTo(3)
     ->startAt(0)
     ->blocking();
-    
+
 foreach ($selectQuery as $result) {
     echo $result['userId'] . ' => ' . $result['name'];
 }
@@ -564,7 +564,7 @@ $userResults = $dbBuilder
     ->startAt(0)
     ->blocking()
     ->getAllEntries();
-    
+
 foreach ($userResults as $result) {
     echo $result['userId'] . ' => ' . $result['name'];
 }
@@ -597,7 +597,7 @@ $result = $dbBuilder
     ->startAt(0)
     ->blocking()
     ->getOneEntry();
-    
+
 echo $result['userId'] . ' => ' . $result['name'];
 ```
 
@@ -621,7 +621,7 @@ $userIds = $dbBuilder
         'u.zipCode' => 33769,
     ])
     ->getFlattenedFields();
-    
+
 foreach ($userIds as $userId) {
     // Do something which each $userId here
 }
@@ -754,7 +754,7 @@ $user = $dbBuilder
         'user_id' => $userId, // user_id must be equal to $userId
     ])
     ->getOneEntry();
-    
+
 // $user now contains all table column and values:
 echo $user['user_id'];
 ```
@@ -778,7 +778,7 @@ In these cases make sure to surround all table column names / field names and ta
 
 ```sql
 ... WHERE (`user_id` BETWEEN ? AND ?) AND (`create_date` > ?) ...
-```  
+```
 
 For custom expressions every expression is surrounded by brackets, to make sure they do not influence each other, and the parameters are sent separately from the query, in this case: `[15, 55, time() - 86400]`
 
@@ -841,7 +841,7 @@ $file = $dbBuilder
     ->getOneEntry();
 
 // Use file_data in some way, like showing or writing it - it is a regular string
-echo $file['file_data'];    
+echo $file['file_data'];
 ```
 
 You can use the `LargeObject` class with your MySQL/SQLite UPDATEs and INSERTs too, to make your code work across all systems, although it will work even without it. Only Postgres explicitely needs it for BYTEA columns.

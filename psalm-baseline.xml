@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="3.11.2@d470903722cfcbc1cd04744c5491d3e6d13ec3d9">
+  <file src="src/Builder/SelectIteratorTrait.php">
+    <ImplementedReturnTypeMismatch occurrences="1">
+      <code>int</code>
+    </ImplementedReturnTypeMismatch>
+  </file>
+  <file src="src/DBPassToLowerLayerTrait.php">
+    <MissingConstructor occurrences="1">
+      <code>$lowerLayer</code>
+    </MissingConstructor>
+  </file>
+</files>

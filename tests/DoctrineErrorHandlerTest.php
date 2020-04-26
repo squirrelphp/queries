@@ -194,6 +194,27 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame([['dada' => '55'], ['dada' => 33]], $result);
     }
 
+    public function testFetchAllAndFlattenPassToLowerLayer()
+    {
+        // Lower layer mock
+        $lowerLayer = \Mockery::mock(DBRawInterface::class);
+
+        $expected = [['dada' => '55'], ['dada' => 33]];
+
+        $lowerLayer
+            ->shouldReceive('fetchAllAndFlatten')
+            ->once()
+            ->with('SELECT * FROM table')
+            ->andReturn($expected);
+
+        $errorHandler = new DBErrorHandler();
+        $errorHandler->setLowerLayer($lowerLayer);
+
+        $result = $errorHandler->fetchAllAndFlatten('SELECT * FROM table');
+
+        $this->assertSame($expected, $result);
+    }
+
     public function testInsertPassToLowerLayer()
     {
         // Lower layer mock

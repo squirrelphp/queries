@@ -9,14 +9,25 @@ namespace Squirrel\Queries\Doctrine;
  */
 class DBSQLiteImplementation extends DBPostgreSQLImplementation
 {
+    private ?float $sqliteVersion = null;
+
     /**
      * @codeCoverageIgnore
      */
-    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
-    {
-        // SQLite in version 3.24 or above with upsert functionality is only included in PHP 7.3 and above
-        // Emulate upsert for PHP below 7.3
-        if (PHP_VERSION_ID < 70300) {
+    public function insertOrUpdate(
+        string $tableName,
+        array $row = [],
+        array $indexColumns = [],
+        ?array $rowUpdates = null
+    ): void {
+        if ($this->sqliteVersion === null) {
+            $connection = $this->getConnection();
+
+            $this->sqliteVersion = \floatval($connection->query('select sqlite_version() AS "v"')->fetch()['v']);
+        }
+
+        // SQLite below version 3.24 does not offer native upsert, so emulate it
+        if ($this->sqliteVersion < 3.24) {
             $this->insertOrUpdateEmulation($tableName, $row, $indexColumns, $rowUpdates);
         } else {
             parent::insertOrUpdate($tableName, $row, $indexColumns, $rowUpdates);
@@ -29,7 +40,7 @@ class DBSQLiteImplementation extends DBPostgreSQLImplementation
 
         // SQLite does not support ... FOR UPDATE and it is not needed, so we remove it
         if (($select['lock'] ?? false) === true) {
-            $sql = substr($sql, 0, -11);
+            $sql = \substr($sql, 0, -11);
         }
 
         return [$sql, $queryValues];

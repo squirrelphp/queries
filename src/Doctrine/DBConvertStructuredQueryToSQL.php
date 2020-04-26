@@ -33,12 +33,12 @@ class DBConvertStructuredQueryToSQL
      *
      * @param array $validOptions List of valid options and default values for them
      * @param array $options List of provided options which need to be processed
-     * @return array
      */
-    public function verifyAndProcessOptions(array $validOptions, array $options)
+    public function verifyAndProcessOptions(array $validOptions, array $options): array
     {
         // Convert "table" to "tables"
-        if (isset($options['table'])
+        if (
+            isset($options['table'])
             && !isset($options['tables'])
             && isset($validOptions['tables'])
         ) {
@@ -47,7 +47,8 @@ class DBConvertStructuredQueryToSQL
         }
 
         // Convert "field" to "fields"
-        if (isset($options['field'])
+        if (
+            isset($options['field'])
             && !isset($options['fields'])
             && isset($validOptions['fields'])
         ) {
@@ -87,7 +88,8 @@ class DBConvertStructuredQueryToSQL
                 case 'limit':
                 case 'offset':
                     // Conversion of value does not match the original value, so we have a very wrong type
-                    if (\is_bool($optVal)
+                    if (
+                        \is_bool($optVal)
                         || (
                             !\is_int($optVal)
                             && \strval(\intval($optVal)) !== \strval($optVal)
@@ -150,11 +152,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Build fields selection part of the query (for SELECT)
-     *
-     * @param array $fields
-     * @return string
      */
-    public function buildFieldSelection(array $fields)
+    public function buildFieldSelection(array $fields): string
     {
         // No fields mean we select all fields!
         if (\count($fields) === 0) {
@@ -189,7 +188,8 @@ class DBConvertStructuredQueryToSQL
             // Whether this was an expression (according to special characters found)
             $isExpression = false;
 
-            if (\strpos($field, ':') !== false
+            if (
+                \strpos($field, ':') !== false
                 || \strpos($field, ' ') !== false
                 || \strpos($field, '(') !== false
                 || \strpos($field, ')') !== false
@@ -220,11 +220,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Build FROM or UPDATE part for the query (both are built the same)
-     *
-     * @param array $tables
-     * @return array
      */
-    public function buildTableJoins(array $tables)
+    public function buildTableJoins(array $tables): array
     {
         // List of query values for PDO
         $queryValues = [];
@@ -278,12 +275,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Build UPDATE SET clause and add query values
-     *
-     * @param array $changes
-     * @param array $queryValues
-     * @return array
      */
-    public function buildChanges(array $changes, array $queryValues)
+    public function buildChanges(array $changes, array $queryValues): array
     {
         // List of finished change expressions, to be imploded with ,
         $changesList = [];
@@ -307,7 +300,7 @@ class DBConvertStructuredQueryToSQL
             // No assignment operator, meaning we have a fieldName => value entry
             if (\strpos($expression, '=') === false) {
                 // No value was given, we just have a field name without new value
-                if (\is_array($values) && \count($values)===0) {
+                if (\is_array($values) && \count($values) === 0) {
                     throw Debug::createException(
                         DBInvalidOptionException::class,
                         DBInterface::class,
@@ -339,7 +332,7 @@ class DBConvertStructuredQueryToSQL
             $changesList[] = $expression;
 
             // Skip this entry for values - this is just an expression
-            if (\is_array($values) && \count($values)===0) {
+            if (\is_array($values) && \count($values) === 0) {
                 continue;
             }
 
@@ -366,12 +359,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Build WHERE clause and add query values
-     *
-     * @param array $whereOptions
-     * @param array $queryValues
-     * @return array
      */
-    public function buildWhere(array $whereOptions, array $queryValues = [])
+    public function buildWhere(array $whereOptions, array $queryValues = []): array
     {
         // If no WHERE restrictions are defined, we just do "WHERE 1"
         if (\count($whereOptions) === 0) {
@@ -400,7 +389,8 @@ class DBConvertStructuredQueryToSQL
             }
 
             // Check if this is a custom expression, not just a field name to value expression
-            if (\strpos($expression, ' ') !== false
+            if (
+                \strpos($expression, ' ') !== false
                 || \strpos($expression, '=') !== false
                 || \strpos($expression, '<') !== false
                 || \strpos($expression, '>') !== false
@@ -449,11 +439,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Build GROUP BY clause
-     *
-     * @param array $groupByOptions
-     * @return string
      */
-    public function buildGroupBy(array $groupByOptions)
+    public function buildGroupBy(array $groupByOptions): string
     {
         // List of finished WHERE expressions, to be imploded with ANDs
         $groupByProcessed = [];
@@ -485,11 +472,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Build ORDER BY clause
-     *
-     * @param array $orderOptions
-     * @return string
      */
-    public function buildOrderBy(array $orderOptions)
+    public function buildOrderBy(array $orderOptions): string
     {
         // List of finished WHERE expressions, to be imploded with ANDs
         $orderProcessed = [];
@@ -526,7 +510,8 @@ class DBConvertStructuredQueryToSQL
             $variableFound = (\strpos($expression, ':') !== false);
 
             // Expression contains not just the field name
-            if ($variableFound === true
+            if (
+                $variableFound === true
                 || \strpos($expression, ' ') !== false
                 || \strpos($expression, '(') !== false
                 || \strpos($expression, ')') !== false
@@ -547,11 +532,9 @@ class DBConvertStructuredQueryToSQL
     /**
      * Add query variables to existing values - but NULL is not allowed as a value
      *
-     * @param array $existingValues
      * @param mixed $newValues
-     * @return array
      */
-    private function addQueryVariablesNoNull(array $existingValues, $newValues)
+    private function addQueryVariablesNoNull(array $existingValues, $newValues): array
     {
         // Convert to array of values if not already done
         if (!\is_array($newValues)) {

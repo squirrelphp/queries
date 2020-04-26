@@ -11,30 +11,23 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
  */
 class UpdateEntries
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
-
-    /**
-     * @var string
-     */
-    private $table = '';
+    private DBInterface $db;
+    private string $table = '';
 
     /**
      * @var array<int|string,mixed> SET clauses for the query
      */
-    private $changes = [];
+    private array $changes = [];
 
     /**
      * @var array<int|string,mixed> WHERE restrictions in query
      */
-    private $where = [];
+    private array $where = [];
 
     /**
      * @var bool We need to confirmation before we execute a query without WHERE restriction
      */
-    private $confirmNoWhere = false;
+    private bool $confirmNoWhere = false;
 
     public function __construct(DBInterface $db)
     {

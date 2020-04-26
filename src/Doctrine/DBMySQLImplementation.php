@@ -2,7 +2,6 @@
 
 namespace Squirrel\Queries\Doctrine;
 
-use Doctrine\DBAL\Connection;
 use Squirrel\Queries\LargeObject;
 
 /**
@@ -17,12 +16,12 @@ class DBMySQLImplementation extends DBAbstractImplementation
         $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Divvy up the field names, values and placeholders for the INSERT part
-        $columnsForInsert = array_map([$this, 'quoteIdentifier'], array_keys($row));
-        $placeholdersForInsert = array_fill(0, count($row), '?');
-        $queryValues = array_values($row);
+        $columnsForInsert = \array_map([$this, 'quoteIdentifier'], \array_keys($row));
+        $placeholdersForInsert = \array_fill(0, \count($row), '?');
+        $queryValues = \array_values($row);
 
         // No update, so just make a dummy update setting the unique index fields
-        if (count($rowUpdates) === 0) {
+        if (\count($rowUpdates) === 0) {
             foreach ($indexColumns as $fieldName) {
                 $rowUpdates[] = ':' . $fieldName . ':=:' . $fieldName . ':';
             }
@@ -33,13 +32,10 @@ class DBMySQLImplementation extends DBAbstractImplementation
 
         // Generate the insert query
         $query = 'INSERT INTO ' . $this->quoteIdentifier($tableName) .
-            ' (' . (count($columnsForInsert) > 0 ? implode(',', $columnsForInsert) : '') . ') ' .
-            'VALUES (' . (count($columnsForInsert) > 0 ? implode(',', $placeholdersForInsert) : '') . ') ' .
+            ' (' . (\count($columnsForInsert) > 0 ? \implode(',', $columnsForInsert) : '') . ') ' .
+            'VALUES (' . (\count($columnsForInsert) > 0 ? \implode(',', $placeholdersForInsert) : '') . ') ' .
             'ON DUPLICATE KEY UPDATE ' . $updatePart;
 
-        /**
-         * @var Connection $connection
-         */
         $connection = $this->getConnection();
         $statement = $connection->prepare($query);
 

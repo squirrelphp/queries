@@ -1,8 +1,8 @@
 version: "3.7"
 services:
-    squirrel_queries_72:
-        image: thecodingmachine/php:7.2-v2-cli
-        container_name: squirrel_queries_72
+    squirrel_queries_74:
+        image: thecodingmachine/php:7.4-v3-cli
+        container_name: squirrel_queries_74
         tty: true
         working_dir: /usr/src/app
         command: ["vendor/bin/phpunit", "--colors=always", "--filter", "Integration"]
@@ -15,8 +15,10 @@ services:
         environment:
             PHP_EXTENSION_APCU: 0
             PHP_EXTENSION_REDIS: 0
+            PHP_EXTENSION_SQLITE3: 1
             PHP_EXTENSION_PDO_MYSQL: 1
             PHP_EXTENSION_PDO_PGSQL: 1
+            PHP_EXTENSION_PDO_SQLITE: 1
             PHP_INI_MEMORY_LIMIT: 1g
             PHP_INI_ERROR_REPORTING: E_ALL
             SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
@@ -29,29 +31,6 @@ services:
             - squirrel_queries_postgres
             - squirrel_queries_mysql
             - squirrel_queries_mariadb
-
-    squirrel_queries_73:
-        image: thecodingmachine/php:7.3-v2-cli
-        container_name: squirrel_queries_73
-        tty: true
-        working_dir: /usr/src/app
-        command: ["vendor/bin/phpunit", "--colors=always", "--filter", "SQLiteDoctrineIntegrationTest"]
-        volumes:
-            - ./src:/usr/src/app/src
-            - ./tests:/usr/src/app/tests
-            - ./composer.json:/usr/src/app/composer.json
-            - ./phpunit.xml.dist:/usr/src/app/phpunit.xml.dist
-            - ./vendor-bin:/usr/src/app/vendor-bin
-        environment:
-            PHP_EXTENSION_APCU: 0
-            PHP_EXTENSION_REDIS: 0
-            PHP_EXTENSION_PDO_MYSQL: 1
-            PHP_EXTENSION_PDO_PGSQL: 0
-            PHP_INI_MEMORY_LIMIT: 1g
-            PHP_INI_ERROR_REPORTING: E_ALL
-            SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
-            STARTUP_COMMAND_1: composer update --no-scripts --quiet
-            STARTUP_COMMAND_2: composer bin all update --quiet
 
     squirrel_queries_postgres:
         image: postgres:latest

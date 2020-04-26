@@ -9,30 +9,23 @@ use Squirrel\Queries\DBInterface;
  */
 class InsertOrUpdateEntry
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
-
-    /**
-     * @var string
-     */
-    private $table = '';
+    private DBInterface $db;
+    private string $table = '';
 
     /**
      * @var array<string,mixed> VALUES clauses for the query
      */
-    private $values = [];
+    private array $values = [];
 
     /**
      * @var string[] Unique index fields to determine when to update and when to insert
      */
-    private $index = [];
+    private array $index = [];
 
     /**
      * @var array<int|string,mixed> SET clauses for the update part of the query
      */
-    private $valuesOnUpdate = [];
+    private array $valuesOnUpdate = [];
 
     public function __construct(DBInterface $db)
     {

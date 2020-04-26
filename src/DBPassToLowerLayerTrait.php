@@ -7,10 +7,7 @@ namespace Squirrel\Queries;
  */
 trait DBPassToLowerLayerTrait
 {
-    /**
-     * @var DBRawInterface
-     */
-    private $lowerLayer;
+    private DBRawInterface $lowerLayer;
 
     public function transaction(callable $func, ...$arguments)
     {
@@ -45,6 +42,11 @@ trait DBPassToLowerLayerTrait
     public function fetchAll($query, array $vars = []): array
     {
         return $this->lowerLayer->fetchAll($query, $vars);
+    }
+
+    public function fetchAllAndFlatten($query, array $vars = []): array
+    {
+        return $this->lowerLayer->fetchAllAndFlatten($query, $vars);
     }
 
     public function insert(

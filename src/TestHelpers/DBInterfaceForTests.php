@@ -11,17 +11,17 @@ abstract class DBInterfaceForTests implements DBInterface
 {
     public function quoteIdentifier(string $identifier): string
     {
-        if (strpos($identifier, ".") !== false) {
-            $parts = array_map(
+        if (\strpos($identifier, ".") !== false) {
+            $parts = \array_map(
                 function ($p) {
-                    return '"' . str_replace('"', '""', $p) . '"';
+                    return '"' . \str_replace('"', '""', $p) . '"';
                 },
-                explode(".", $identifier)
+                \explode(".", $identifier)
             );
 
-            return implode(".", $parts);
+            return \implode(".", $parts);
         }
 
-        return '"' . str_replace('"', '""', $identifier) . '"';
+        return '"' . \str_replace('"', '""', $identifier) . '"';
     }
 }

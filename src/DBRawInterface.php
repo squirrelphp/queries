@@ -13,16 +13,12 @@ interface DBRawInterface extends DBInterface
 {
     /**
      * Set "we are within a transaction" to either true or false
-     *
-     * @param bool $inTransaction
      */
     public function setTransaction(bool $inTransaction): void;
 
     /**
      * Set DBRawInterface layer beneath the current class, in order to build layers
      * of classes implementing DBRawInterface and which serve different purposes
-     *
-     * @param DBRawInterface $lowerLayer
      */
     public function setLowerLayer(DBRawInterface $lowerLayer): void;
 }

@@ -21,8 +21,6 @@ interface DBInterface
 
     /**
      * Checks if we are currently in a transaction
-     *
-     * @return bool
      */
     public function inTransaction(): bool;
 
@@ -73,13 +71,25 @@ interface DBInterface
      * Fetch all rows with a select query and then clear the result set
      *
      * @param string|array<string,mixed> $query SQL query as a string, with ? as variable placeholders if necessary or an array for a structured SQL query where $vars is not used
-     * @psalm-param string|array{fields?:array<int|string,string>,field?:string,tables?:array<int|string,mixed>,table?:string,where?:array<int|string,mixed>,group?:array<int|string,string>,order?:array<int|string,string>,limit?:int,offset?:int,lock?:bool,flattenFields?:bool} $query
+     * @psalm-param string|array{fields?:array<int|string,string>,field?:string,tables?:array<int|string,mixed>,table?:string,where?:array<int|string,mixed>,group?:array<int|string,string>,order?:array<int|string,string>,limit?:int,offset?:int,lock?:bool} $query
      * @param array<int,mixed> $vars Query variables, replaces ? with these variables in order
-     * @return array<int,mixed> List of table rows, each entry as an associate array for one row
+     * @return array<int,array<string,mixed>> List of table rows, each entry as an associate array for one row
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
     public function fetchAll($query, array $vars = []): array;
+
+    /**
+     * Fetch all rows, flatten the results to a list of values and then clear the result set
+     *
+     * @param string|array<string,mixed> $query SQL query as a string, with ? as variable placeholders if necessary or an array for a structured SQL query where $vars is not used
+     * @psalm-param string|array{fields?:array<int|string,string>,field?:string,tables?:array<int|string,mixed>,table?:string,where?:array<int|string,mixed>,group?:array<int|string,string>,order?:array<int|string,string>,limit?:int,offset?:int,lock?:bool} $query
+     * @param array<int,mixed> $vars Query variables, replaces ? with these variables in order
+     * @return array<bool|int|float|string|null> List of field values
+     *
+     * @throws DBException Common minimal exception thrown if anything goes wrong
+     */
+    public function fetchAllAndFlatten($query, array $vars = []): array;
 
     /**
      * Insert a row into a table with the given names and values
@@ -162,9 +172,6 @@ interface DBInterface
     /**
      * Quotes an identifier, like a table name or column name, so there is no risk
      * of overlap with a reserved keyword
-     *
-     * @param string $identifier
-     * @return string
      */
     public function quoteIdentifier(string $identifier): string;
 
@@ -172,17 +179,12 @@ interface DBInterface
      * Quotes all identifiers in an expression (for example a query). Identifiers are found
      * by being surrounded by colons, for example: "WHERE :user_id: = ?" - user_id would be
      * quoted in that example
-     *
-     * @param string $expression
-     * @return string
      */
     public function quoteExpression(string $expression): string;
 
     /**
      * Get connection object for low-level access when there is no other way of solving something - should
      * rarely be necessary
-     *
-     * @return object
      */
     public function getConnection(): object;
 }

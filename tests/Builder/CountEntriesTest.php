@@ -24,7 +24,7 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
         $expectedResult = [33];
 
         $this->db
-            ->shouldReceive('fetchAll')
+            ->shouldReceive('fetchAllAndFlatten')
             ->once()
             ->with([
                 'fields' => [
@@ -33,7 +33,6 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
                 'tables' => [],
                 'where' => [],
                 'lock' => false,
-                'flattenFields' => true,
             ])
             ->andReturn($expectedResult);
 
@@ -49,7 +48,7 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
         $expectedResult = [33];
 
         $this->db
-            ->shouldReceive('fetchAll')
+            ->shouldReceive('fetchAllAndFlatten')
             ->once()
             ->with([
                 'fields' => [
@@ -63,7 +62,6 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
                     'g.somefield' => 33,
                 ],
                 'lock' => true,
-                'flattenFields' => true,
             ])
             ->andReturn($expectedResult);
 
@@ -88,7 +86,7 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
         $expectedResult = [33];
 
         $this->db
-            ->shouldReceive('fetchAll')
+            ->shouldReceive('fetchAllAndFlatten')
             ->once()
             ->with([
                 'fields' => [
@@ -101,7 +99,6 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
                     'g.somefield' => 33,
                 ],
                 'lock' => true,
-                'flattenFields' => true,
             ])
             ->andReturn($expectedResult);
 

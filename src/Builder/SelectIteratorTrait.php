@@ -8,29 +8,14 @@ namespace Squirrel\Queries\Builder;
 trait SelectIteratorTrait
 {
     /**
-     * @var mixed Class which we send the query to and get the results
-     */
-    private $source;
-
-    /**
      * @var array SELECT query to execute
      */
-    private $query = [];
+    private array $query = [];
 
     /**
-     * @var mixed Reference to the select that we get from the $source object
+     * @var int Position within the result set, set to -1 because it is incremented before it is accessed
      */
-    private $selectReference;
-
-    /**
-     * @var int
-     */
-    private $position = -1;
-
-    /**
-     * @var mixed Last result we retrieved, usually either null or a result set of some kind
-     */
-    private $lastResult;
+    private int $position = -1;
 
     /**
      * Clear results once the current instance is destroyed
@@ -38,14 +23,6 @@ trait SelectIteratorTrait
     public function __destruct()
     {
         $this->clear();
-    }
-
-    /**
-     * @return mixed
-     */
-    public function current()
-    {
-        return $this->lastResult;
     }
 
     public function next(): void
@@ -56,10 +33,7 @@ trait SelectIteratorTrait
         }
     }
 
-    /**
-     * @return mixed
-     */
-    public function key()
+    public function key(): int
     {
         return $this->position;
     }

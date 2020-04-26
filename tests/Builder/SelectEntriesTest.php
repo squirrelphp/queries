@@ -270,7 +270,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $expectedResult = ['one', 5];
 
         $this->db
-            ->shouldReceive('fetchAll')
+            ->shouldReceive('fetchAllAndFlatten')
             ->once()
             ->with([
                 'tables' => [
@@ -293,7 +293,6 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
                 'limit' => 55,
                 'offset' => 13,
                 'lock' => true,
-                'flattenFields' => true,
             ])
             ->andReturn($expectedResult);
 

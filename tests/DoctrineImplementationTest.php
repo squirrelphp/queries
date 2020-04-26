@@ -1272,7 +1272,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'where' => [
                 'user_agent_hash' => 'Mozilla',
             ],
-            'flattenFields' => true,
         ];
 
         // Doctrine statement
@@ -1306,7 +1305,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('closeCursor')
             ->once();
 
-        $result = $this->db->fetchAll($structuredQuery);
+        $result = $this->db->fetchAllAndFlatten($structuredQuery);
 
         // Make sure the query has ended with the correct result
         $this->assertEquals(['5', 'fhsdkj'], $result);
@@ -2074,25 +2073,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
                 'blabla' => 5,
             ],
             'lock' => 4,
-        ]);
-    }
-
-    public function testConvertToSelectSQLStringInvalidOptionFlattenFieldsNoBool()
-    {
-        $this->expectException(DBInvalidOptionException::class);
-
-        // Try it with the invalid option
-        $this->db->fetchAll([
-            'fields' => [
-                'boringfield',
-            ],
-            'tables' => [
-                'blobs.aa_sexy',
-            ],
-            'where' => [
-                'blabla' => 5,
-            ],
-            'flattenFields' => 4,
         ]);
     }
 

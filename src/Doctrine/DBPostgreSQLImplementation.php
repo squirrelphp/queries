@@ -2,7 +2,6 @@
 
 namespace Squirrel\Queries\Doctrine;
 
-use Doctrine\DBAL\Connection;
 use Squirrel\Queries\DBSelectQueryInterface;
 use Squirrel\Queries\LargeObject;
 
@@ -59,9 +58,6 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
     {
         [$query, $queryValues] = $this->generateUpsertSQLAndParameters($tableName, $row, $indexColumns, $rowUpdates);
 
-        /**
-         * @var Connection $connection
-         */
         $connection = $this->getConnection();
         $statement = $connection->prepare($query);
 
@@ -93,17 +89,17 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Divvy up the field names, values and placeholders for the INSERT part
-        $columnsForInsert = array_map([$this, 'quoteIdentifier'], array_keys($row));
-        $placeholdersForInsert = array_fill(0, count($row), '?');
-        $queryValues = array_values($row);
+        $columnsForInsert = \array_map([$this, 'quoteIdentifier'], \array_keys($row));
+        $placeholdersForInsert = \array_fill(0, \count($row), '?');
+        $queryValues = \array_values($row);
 
         // Generate the insert query
         $query = 'INSERT INTO ' . $this->quoteIdentifier($tableName) .
-            ' (' . (count($columnsForInsert) > 0 ? implode(',', $columnsForInsert) : '') . ') ' .
-            'VALUES (' . (count($columnsForInsert) > 0 ? implode(',', $placeholdersForInsert) : '') . ') ' .
-            'ON CONFLICT (' . implode(',', array_map([$this, 'quoteIdentifier'], $indexColumns)) . ') ';
+            ' (' . (\count($columnsForInsert) > 0 ? \implode(',', $columnsForInsert) : '') . ') ' .
+            'VALUES (' . (\count($columnsForInsert) > 0 ? \implode(',', $placeholdersForInsert) : '') . ') ' .
+            'ON CONFLICT (' . \implode(',', \array_map([$this, 'quoteIdentifier'], $indexColumns)) . ') ';
 
-        if (count($rowUpdates) === 0) { // No updates, so insert or do nothing
+        if (\count($rowUpdates) === 0) { // No updates, so insert or do nothing
             $query .= 'DO NOTHING';
         } else { // Generate update part of the query
             [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($rowUpdates, $queryValues);

@@ -9,25 +9,22 @@ use Squirrel\Queries\DBInterface;
  */
 class CountEntries
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    private DBInterface $db;
 
     /**
      * @var array<int|string,mixed> Explicit connections between the repositories
      */
-    private $tables = [];
+    private array $tables = [];
 
     /**
      * @var array<int|string,mixed> WHERE restrictions in query
      */
-    private $where = [];
+    private array $where = [];
 
     /**
      * @var bool Whether the SELECT query should block the scanned entries
      */
-    private $blocking = false;
+    private bool $blocking = false;
 
     public function __construct(DBInterface $db)
     {
@@ -68,16 +65,15 @@ class CountEntries
      */
     public function getNumber(): int
     {
-        $results = $this->db->fetchAll([
+        $results = $this->db->fetchAllAndFlatten([
             'fields' => [
                 'num' => 'COUNT(*)',
             ],
             'tables' => $this->tables,
             'where' => $this->where,
-            'flattenFields' => true,
             'lock' => $this->blocking,
         ]);
 
-        return $results[0] ?? 0;
+        return \intval($results[0] ?? 0);
     }
 }

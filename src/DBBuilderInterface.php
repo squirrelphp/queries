@@ -34,6 +34,10 @@ interface DBBuilderInterface
      * @param mixed ...$arguments
      * @return mixed
      *
+     * @template TReturn
+     * @psalm-param callable(mixed ...$arguments): TReturn $func
+     * @psalm-return TReturn
+     *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
     public function transaction(callable $func, ...$arguments);

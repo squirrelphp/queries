@@ -7,10 +7,7 @@ use Squirrel\Queries\LargeObject;
 
 abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    protected static $db;
+    protected static ?DBInterface $db = null;
 
     abstract protected static function initializeDatabaseAndGetConnection(): ?DBInterface;
 
@@ -24,7 +21,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             $maxSleep--;
 
             // Quit after 60 seconds
-            if ($maxSleep<=0) {
+            if ($maxSleep <= 0) {
                 throw new \Exception('No connection possible to ' . $host . ':' . $port);
             }
 
@@ -376,18 +373,16 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
         $this->initializeDataWithDefaultTwoEntries();
 
-        $userIds = self::$db->fetchAll([
+        $userIds = self::$db->fetchAllAndFlatten([
             'table' => 'account',
             'field' => 'user_id',
-            'flattenFields' => true,
         ]);
 
         $this->assertEquals([1, 2], [intval($userIds[0]), intval($userIds[1])]);
 
-        $flattenedResults = self::$db->fetchAll([
+        $flattenedResults = self::$db->fetchAllAndFlatten([
             'table' => 'account',
             'field' => 'username',
-            'flattenFields' => true,
         ]);
 
         $this->assertEquals(['Mary', 'John'], $flattenedResults);

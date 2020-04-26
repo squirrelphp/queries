@@ -2,8 +2,5 @@
 # Get directory of this script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-# Test old SQLite version (emulated UPSERT) and real live tests with PostgreSQL and MySQL
-docker-compose -f "$DIR/compose-test.yml" --project-directory "$DIR/.." up --build --force-recreate --renew-anon-volumes squirrel_queries_72
-
-# Test new SQLite version with UPSERT functionality
-docker-compose -f "$DIR/compose-test.yml" --project-directory "$DIR/.." up --build --force-recreate --renew-anon-volumes squirrel_queries_73
+# Test SQLite and real live tests with PostgreSQL and MySQL
+docker-compose -f "$DIR/compose-test.yml" --project-directory "$DIR/.." up --build --force-recreate --renew-anon-volumes squirrel_queries_74

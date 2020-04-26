@@ -175,6 +175,28 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $return);
     }
 
+    public function testFetchAllAndFlatten()
+    {
+        // Variables to pass to the function
+        $query = 'SELECT';
+        $vars = [0, 3, 9];
+
+        // Expected return value
+        $expected = [['dada' => 5]];
+
+        // What we expect to be called with the lower layer
+        $this->dbRawObject
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with(\Mockery::mustBe($query), \Mockery::mustBe($vars))
+            ->andReturn($expected);
+
+        // Make the trait function call
+        $return = $this->dbLowerLayerObject->fetchAllAndFlatten($query, $vars);
+
+        // Check the result
+        $this->assertSame($expected, $return);
+    }
+
     public function testInsert()
     {
         // Variables to pass to the function

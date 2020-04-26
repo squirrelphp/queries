@@ -7,10 +7,7 @@ namespace Squirrel\Queries;
  */
 class LargeObject
 {
-    /**
-     * @var string
-     */
-    private $data;
+    private string $data;
 
     public function __construct(string $data)
     {
@@ -27,12 +24,17 @@ class LargeObject
      */
     public function getStream()
     {
-        /**
-         * @var resource $fp
-         */
         $fp = \fopen('php://temp', 'rb+');
+
+        // @codeCoverageIgnoreStart
+        if ($fp === false) {
+            throw new \UnexpectedValueException('fopen with php://temp was surprisingly unsuccessful');
+        }
+        // @codeCoverageIgnoreEnd
+
         \fwrite($fp, $this->data);
         \fseek($fp, 0);
+
         return $fp;
     }
 }

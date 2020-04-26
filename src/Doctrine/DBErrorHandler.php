@@ -47,7 +47,7 @@ class DBErrorHandler implements DBRawInterface
      *
      * @var int[]
      */
-    private $connectionRetries = [
+    private array $connectionRetries = [
         1000,     // 1ms
         10000,    // 10ms
         100000,   // 100ms
@@ -76,7 +76,7 @@ class DBErrorHandler implements DBRawInterface
      *
      * @var int[]
      */
-    private $lockRetries = [
+    private array $lockRetries = [
         1000,     // 1ms
         10000,    // 10ms
         100000,   // 100ms
@@ -91,8 +91,6 @@ class DBErrorHandler implements DBRawInterface
 
     /**
      * Change connection retries configuration
-     *
-     * @param array $connectionRetries
      */
     public function setConnectionRetries(array $connectionRetries): void
     {
@@ -101,8 +99,6 @@ class DBErrorHandler implements DBRawInterface
 
     /**
      * Change deadlock retries configuration
-     *
-     * @param array $lockRetries
      */
     public function setLockRetries(array $lockRetries): void
     {
@@ -128,10 +124,6 @@ class DBErrorHandler implements DBRawInterface
     /**
      * Execute transaction - attempts to do it and repeats it if there was a problem
      *
-     * @param callable $func
-     * @param array $arguments
-     * @param array $connectionRetries
-     * @param array $lockRetries
      * @return mixed
      *
      * @throws DBException
@@ -191,7 +183,7 @@ class DBErrorHandler implements DBRawInterface
             $connectionRetries = $this->attemptReconnect($connectionRetries);
 
             // Reconnecting was unsuccessful
-            if ($connectionRetries === false) {
+            if ($connectionRetries === null) {
                 throw Debug::createException(
                     DBConnectionException::class, // exception class to create
                     DBInterface::class, // origin classes to skip when backtracking
@@ -267,6 +259,11 @@ class DBErrorHandler implements DBRawInterface
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
+    public function fetchAllAndFlatten($query, array $vars = []): array
+    {
+        return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
+    }
+
     public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
@@ -296,10 +293,6 @@ class DBErrorHandler implements DBRawInterface
      * Pass through all calls to lower layer, and just add try-catch blocks so we can
      * catch and process connection and (dead)lock exceptions / repeat queries
      *
-     * @param string $name
-     * @param array $arguments
-     * @param array $connectionRetries
-     * @param array $lockRetries
      * @return mixed
      *
      * @throws DBException
@@ -323,7 +316,7 @@ class DBErrorHandler implements DBRawInterface
             $connectionRetries = $this->attemptReconnect($connectionRetries);
 
             // Reconnecting was unsuccessful
-            if ($connectionRetries === false) {
+            if ($connectionRetries === null) {
                 throw Debug::createException(
                     DBConnectionException::class,
                     DBInterface::class,
@@ -367,15 +360,12 @@ class DBErrorHandler implements DBRawInterface
 
     /**
      * Attempt to reconnect to DB server
-     *
-     * @param array $connectionRetries
-     * @return array|false
      */
-    protected function attemptReconnect(array $connectionRetries)
+    protected function attemptReconnect(array $connectionRetries): ?array
     {
         // No more attempts left - return false to report back
         if (\count($connectionRetries) === 0) {
-            return false;
+            return null;
         }
 
         // Wait for a certain amount of microseconds

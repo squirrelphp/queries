@@ -20,29 +20,15 @@ use Squirrel\Queries\LargeObject;
  */
 abstract class DBAbstractImplementation implements DBRawInterface
 {
-    /**
-     * Doctrine DBAL connection
-     *
-     * @var Connection
-     */
-    private $connection;
-
-    /**
-     * @var DBConvertStructuredQueryToSQL
-     */
-    protected $structuredQueryConverter;
+    private Connection $connection;
+    protected DBConvertStructuredQueryToSQL $structuredQueryConverter;
 
     /**
      * Whether there is currently a transaction active, to avoid nested
      * transactions in our "transaction" function
-     *
-     * @var bool
      */
-    private $inTransaction = false;
+    private bool $inTransaction = false;
 
-    /**
-     * @param Connection $connection
-     */
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
@@ -84,7 +70,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     public function select($query, array $vars = []): DBSelectQueryInterface
     {
         // Convert structured query into a string query with variables
-        if (is_array($query)) {
+        if (\is_array($query)) {
             [$query, $vars] = $this->convertStructuredSelectToQuery($query);
         }
 
@@ -143,11 +129,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     public function fetchAll($query, array $vars = []): array
     {
         // Convert structured query into a string query with variables
-        if (is_array($query)) {
-            $flattenFields = $this->getFlattenFieldsOption($query['flattenFields'] ?? false);
-            if (isset($query['flattenFields'])) {
-                unset($query['flattenFields']);
-            }
+        if (\is_array($query)) {
             [$query, $vars] = $this->convertStructuredSelectToQuery($query);
         }
 
@@ -159,19 +141,19 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $result = $statement->fetchAll(FetchMode::ASSOCIATIVE);
         $statement->closeCursor();
 
-        // We flatten the fields if requested
-        if (isset($flattenFields) && $flattenFields === true && count($result) > 0) {
-            return $this->flattenResults($result);
-        }
-
         // Return query result
         return $result;
+    }
+
+    public function fetchAllAndFlatten($query, array $vars = []): array
+    {
+        return $this->flattenResults($this->fetchAll($query, $vars));
     }
 
     public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
     {
         // No table name specified
-        if (strlen($tableName) === 0) {
+        if (\strlen($tableName) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -183,14 +165,14 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $tableNameQuoted = $this->quoteIdentifier($tableName);
 
         // Divvy up the field names, values and placeholders
-        $columnNames = array_keys($row);
-        $columnValues = array_values($row);
-        $placeholders = array_fill(0, count($row), '?');
+        $columnNames = \array_keys($row);
+        $columnValues = \array_values($row);
+        $placeholders = \array_fill(0, \count($row), '?');
 
         // Generate the insert query
         $query = 'INSERT INTO ' . $tableNameQuoted . ' ' .
-            '(' . (count($row) > 0 ? implode(',', array_map([$this, 'quoteIdentifier'], $columnNames)) : '') . ') ' .
-            'VALUES (' . (count($row) > 0 ? implode(',', $placeholders) : '') . ')';
+            '(' . (\count($row) > 0 ? \implode(',', \array_map([$this, 'quoteIdentifier'], $columnNames)) : '') . ') ' .
+            'VALUES (' . (\count($row) > 0 ? \implode(',', $placeholders) : '') . ')';
 
         // Prepare and execute query
         $statement = $this->connection->prepare($query);
@@ -210,7 +192,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $statement->closeCursor();
 
         // No autoincrement index - no insert ID return value needed
-        if (strlen($autoIncrementIndex) === 0) {
+        if (\strlen($autoIncrementIndex) === 0) {
             return null;
         }
 
@@ -237,7 +219,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Generate query
         $sql = 'UPDATE ' . $this->quoteIdentifier($tableName) . ' SET ' . $changeSQL .
-            (strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '');
+            (\strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '');
 
         // Call the change function to avoid duplication
         return $this->change($sql, $queryValues);
@@ -246,7 +228,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     public function delete(string $tableName, array $where = []): int
     {
         // No table name specified
-        if (strlen($tableName) === 0) {
+        if (\strlen($tableName) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -304,22 +286,6 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }, $expression) ?? $expression;
     }
 
-    /**
-     * @param mixed $flattenFields
-     * @return bool
-     */
-    private function getFlattenFieldsOption($flattenFields): bool
-    {
-        if (!\is_bool($flattenFields) && $flattenFields !== 1 && $flattenFields !== 0) {
-            throw Debug::createException(
-                DBInvalidOptionException::class,
-                DBInterface::class,
-                'flattenFields set to a non-boolean value: ' . Debug::sanitizeData($flattenFields)
-            );
-        }
-        return \boolval($flattenFields);
-    }
-
     private function flattenResults(array $results): array
     {
         // New flattened array
@@ -371,12 +337,13 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Generate SELECT query
         $sql = 'SELECT ' . $fieldSelectionSQL . ' FROM ' . $tableJoinsSQL .
-            (strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '') .
-            (isset($groupSQL) && strlen($groupSQL) > 0 ? ' GROUP BY ' . $groupSQL : '') .
-            (isset($orderSQL) && strlen($orderSQL) > 0 ? ' ORDER BY ' . $orderSQL : '');
+            (\strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '') .
+            (isset($groupSQL) && \strlen($groupSQL) > 0 ? ' GROUP BY ' . $groupSQL : '') .
+            (isset($orderSQL) && \strlen($orderSQL) > 0 ? ' ORDER BY ' . $orderSQL : '');
 
         // Either "limit" or "offset" options were specified
-        if ((isset($select['limit']) && $select['limit'] > 0)
+        if (
+            (isset($select['limit']) && $select['limit'] > 0)
             || (isset($select['offset']) && $select['offset'] > 0)
         ) {
             $sql = $this->connection->getDatabasePlatform()->modifyLimitQuery(
@@ -400,7 +367,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
      * @param string $tableName Name of the table
      * @param array $row Row to insert, keys are column names, values are the data
      * @param string[] $indexColumns Index columns which encompass the unique index
-     * @param array $rowUpdates Fields to update if entry already exists
+     * @param array|null $rowUpdates Fields to update if entry already exists
      */
     public function insertOrUpdateEmulation(
         string $tableName,
@@ -428,7 +395,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             }
 
             // No update, so just make a dummy update setting the unique index fields
-            if (count($rowUpdates) === 0) {
+            if (\count($rowUpdates) === 0) {
                 foreach ($indexColumns as $fieldName) {
                     $rowUpdates[] = ':' . $fieldName . ':=:' . $fieldName . ':';
                 }
@@ -453,7 +420,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         array $indexColumns
     ): void {
         // No table name specified
-        if (strlen($tableName) === 0) {
+        if (\strlen($tableName) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -462,7 +429,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // No insert row specified
-        if (count($row) === 0) {
+        if (\count($row) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -471,7 +438,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // No index specified
-        if (count($indexColumns) === 0) {
+        if (\count($indexColumns) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -516,7 +483,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $this->inTransaction = $inTransaction;
     }
 
-    public function getConnection(): object
+    public function getConnection(): Connection
     {
         return $this->connection;
     }

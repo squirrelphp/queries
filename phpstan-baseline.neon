@@ -1,17 +1,22 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAll\\(\\) expects array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\|string\\>\\|string, array\\<string, array\\<int\\|string, mixed\\>\\|bool\\> given\\.$#"
+			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAllAndFlatten\\(\\) expects array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\|string\\>\\|string, array\\<string, array\\<int\\|string, mixed\\>\\|bool\\> given\\.$#"
 			count: 1
 			path: src/Builder/CountEntries.php
 
 		-
 			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAll\\(\\) expects array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\|string\\>\\|string, array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\> given\\.$#"
-			count: 2
+			count: 1
 			path: src/Builder/SelectEntries.php
 
 		-
 			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchOne\\(\\) expects array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\|string\\>\\|string, array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\> given\\.$#"
+			count: 1
+			path: src/Builder/SelectEntries.php
+
+		-
+			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAllAndFlatten\\(\\) expects array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\|string\\>\\|string, array\\<string, array\\<int\\|string, mixed\\>\\|bool\\|int\\> given\\.$#"
 			count: 1
 			path: src/Builder/SelectEntries.php
 

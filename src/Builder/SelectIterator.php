@@ -14,24 +14,22 @@ class SelectIterator implements \Iterator
 {
     use SelectIteratorTrait;
 
-    /**
-     * @var DBInterface
-     */
-    private $source;
-
-    /**
-     * @var DBSelectQueryInterface|null
-     */
-    private $selectReference;
-
-    /**
-     * @var array|null
-     */
-    private $lastResult;
+    private DBInterface $source;
+    private ?DBSelectQueryInterface $selectReference = null;
+    private ?array $lastResult = null;
 
     public function __construct(DBInterface $db, array $query)
     {
         $this->source = $db;
         $this->query = $query;
+    }
+
+    public function current(): array
+    {
+        if ($this->lastResult === null) {
+            throw new \LogicException('Cannot get current value if no result has been retrieved');
+        }
+
+        return $this->lastResult;
     }
 }

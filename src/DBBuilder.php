@@ -14,10 +14,7 @@ use Squirrel\Queries\Builder\UpdateEntries;
  */
 class DBBuilder implements DBBuilderInterface
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    private DBInterface $db;
 
     public function __construct(DBInterface $db)
     {
