@@ -26,9 +26,11 @@ class SelectIterator implements \Iterator
 
     public function current(): array
     {
+        // @codeCoverageIgnoreStart
         if ($this->lastResult === null) {
             throw new \LogicException('Cannot get current value if no result has been retrieved');
         }
+        // @codeCoverageIgnoreEnd
 
         return $this->lastResult;
     }
