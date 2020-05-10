@@ -321,4 +321,64 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($expectedResult, $results);
     }
+
+    public function testGetFlattenedFieldsWithTypes()
+    {
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = ['one', 5, 5.3, true];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $this->assertSame([0, 5, 5, 1], $selectBuilder->getFlattenedIntegerFields());
+        $this->assertSame([true, true, true, true], $selectBuilder->getFlattenedBooleanFields());
+        $this->assertSame([0.0, 5.0, 5.3, 1.0], $selectBuilder->getFlattenedFloatFields());
+        $this->assertSame(['one', '5', '5.3', '1'], $selectBuilder->getFlattenedStringFields());
+    }
 }

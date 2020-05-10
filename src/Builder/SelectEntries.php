@@ -190,6 +190,38 @@ class SelectEntries implements \IteratorAggregate
         ]);
     }
 
+    /**
+     * @return int[]
+     */
+    public function getFlattenedIntegerFields(): array
+    {
+        return \array_map('intval', $this->getFlattenedFields());
+    }
+
+    /**
+     * @return float[]
+     */
+    public function getFlattenedFloatFields(): array
+    {
+        return \array_map('floatval', $this->getFlattenedFields());
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getFlattenedStringFields(): array
+    {
+        return \array_map('strval', $this->getFlattenedFields());
+    }
+
+    /**
+     * @return bool[]
+     */
+    public function getFlattenedBooleanFields(): array
+    {
+        return \array_map('boolval', $this->getFlattenedFields());
+    }
+
     public function getIterator(): SelectIterator
     {
         return new SelectIterator($this->db, [
