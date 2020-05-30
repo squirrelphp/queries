@@ -1,22 +1,2 @@
 parameters:
 	ignoreErrors:
-		-
-			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAllAndFlatten\\(\\) expects array\\(\\)\\|array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'field' \\=\\> string, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'table' \\=\\> string, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'limit' \\=\\> int, \\.\\.\\.\\)\\|string, array\\('fields' \\=\\> array\\('num' \\=\\> 'COUNT\\(\\*\\)'\\), 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'lock' \\=\\> bool\\) given\\.$#"
-			count: 1
-			path: src/Builder/CountEntries.php
-
-		-
-			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAll\\(\\) expects array\\(\\)\\|array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'field' \\=\\> string, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'table' \\=\\> string, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'limit' \\=\\> int, \\.\\.\\.\\)\\|string, array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'limit' \\=\\> int, 'offset' \\=\\> int, 'lock' \\=\\> bool\\) given\\.$#"
-			count: 1
-			path: src/Builder/SelectEntries.php
-
-		-
-			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchOne\\(\\) expects array\\(\\)\\|array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'field' \\=\\> string, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'table' \\=\\> string, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'limit' \\=\\> int, \\.\\.\\.\\)\\|string, array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'offset' \\=\\> int, 'lock' \\=\\> bool\\) given\\.$#"
-			count: 1
-			path: src/Builder/SelectEntries.php
-
-		-
-			message: "#^Parameter \\#1 \\$query of method Squirrel\\\\Queries\\\\DBInterface\\:\\:fetchAllAndFlatten\\(\\) expects array\\(\\)\\|array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'field' \\=\\> string, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'table' \\=\\> string, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'limit' \\=\\> int, \\.\\.\\.\\)\\|string, array\\('fields' \\=\\> array\\<int\\|string, string\\>, 'tables' \\=\\> array\\<int\\|string, mixed\\>, 'where' \\=\\> array\\<int\\|string, mixed\\>, 'order' \\=\\> array\\<int\\|string, string\\>, 'group' \\=\\> array\\<int\\|string, string\\>, 'limit' \\=\\> int, 'offset' \\=\\> int, 'lock' \\=\\> bool\\) given\\.$#"
-			count: 1
-			path: src/Builder/SelectEntries.php
-

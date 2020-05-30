@@ -23,9 +23,9 @@ class InsertOrUpdateEntry
     private array $index = [];
 
     /**
-     * @var array<int|string,mixed> SET clauses for the update part of the query
+     * @var array<int|string,mixed>|null SET clauses for the update part of the query
      */
-    private array $valuesOnUpdate = [];
+    private ?array $valuesOnUpdate = null;
 
     public function __construct(DBInterface $db)
     {
@@ -61,7 +61,7 @@ class InsertOrUpdateEntry
     }
 
     /**
-     * @param array<int|string,mixed>|string $values
+     * @param array<int|string,mixed>|string|null $values
      */
     public function setOnUpdate($values): self
     {

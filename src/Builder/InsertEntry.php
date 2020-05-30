@@ -51,7 +51,7 @@ class InsertEntry
      * @param string $autoIncrementIndex Column / field name for which an autoincrement ID should be returned
      * @return string Return new autoincrement insert ID from database
      */
-    public function writeAndReturnNewId(string $autoIncrementIndex = ''): string
+    public function writeAndReturnNewId(string $autoIncrementIndex): string
     {
         return $this->db->insert($this->table, $this->values, $autoIncrementIndex) ?? '';
     }
