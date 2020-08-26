@@ -9,7 +9,7 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
 /**
  * Delete query builder as a fluent object - build query and execute it
  */
-class DeleteEntries
+class DeleteEntries implements BuilderInterface
 {
     private DBInterface $db;
     private string $table = '';
@@ -81,7 +81,7 @@ class DeleteEntries
                 DBInvalidOptionException::class,
                 [self::class],
                 'No restricting "where" arguments defined for DELETE' .
-                'and no override confirmation with "confirmNoWhereRestrictions" call'
+                'and no override confirmation with "confirmNoWhereRestrictions" call',
             );
         }
     }

@@ -9,7 +9,7 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
 /**
  * Update query builder as a fluent object - build query and execute it
  */
-class UpdateEntries
+class UpdateEntries implements BuilderInterface
 {
     private DBInterface $db;
     private string $table = '';
@@ -85,7 +85,7 @@ class UpdateEntries
                 DBInvalidOptionException::class,
                 [self::class],
                 'No restricting "where" arguments defined for UPDATE' .
-                'and no override confirmation with "confirmNoWhereRestrictions" call'
+                'and no override confirmation with "confirmNoWhereRestrictions" call',
             );
         }
 

@@ -48,7 +48,7 @@ class DBMySQLImplementation extends DBAbstractImplementation
             $statement->bindValue(
                 $paramCounter++,
                 ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
-                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
 

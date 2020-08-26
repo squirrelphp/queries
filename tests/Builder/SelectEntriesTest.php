@@ -5,6 +5,7 @@ namespace Squirrel\Queries\Tests\Builder;
 use Squirrel\Queries\Builder\SelectEntries;
 use Squirrel\Queries\Builder\SelectIterator;
 use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 class SelectEntriesTest extends \PHPUnit\Framework\TestCase
 {
@@ -322,11 +323,11 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testGetFlattenedFieldsWithTypes()
+    public function testGetFlattenedIntegerFields()
     {
         $selectBuilder = new SelectEntries($this->db);
 
-        $expectedResult = ['one', 5, 5.3, true];
+        $expectedResult = ['4', 5, 1, '9'];
 
         $this->db
             ->shouldReceive('fetchAllAndFlatten')
@@ -376,9 +377,531 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
             ->startAt(13)
             ->blocking();
 
-        $this->assertSame([0, 5, 5, 1], $selectBuilder->getFlattenedIntegerFields());
-        $this->assertSame([true, true, true, true], $selectBuilder->getFlattenedBooleanFields());
-        $this->assertSame([0.0, 5.0, 5.3, 1.0], $selectBuilder->getFlattenedFloatFields());
-        $this->assertSame(['one', '5', '5.3', '1'], $selectBuilder->getFlattenedStringFields());
+        $this->assertSame([4, 5, 1, 9], $selectBuilder->getFlattenedIntegerFields());
+    }
+
+    public function testGetFlattenedFloatFields()
+    {
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = ['1.3', 5, 5.3, '5.3'];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $this->assertSame([1.3, 5.0, 5.3, 5.3], $selectBuilder->getFlattenedFloatFields());
+    }
+
+    public function testGetFlattenedStringFields()
+    {
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = ['one', 5, 5.3, 'true'];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $this->assertSame(['one', '5', '5.3', 'true'], $selectBuilder->getFlattenedStringFields());
+    }
+
+    public function testGetFlattenedBooleanFields()
+    {
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = ['1', 0, 1, '0', true, false];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $this->assertSame([true, false, true, false, true, false], $selectBuilder->getFlattenedBooleanFields());
+    }
+
+    public function testGetFlattenedIntegerFieldsWrongScalarType()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = [5, '5lada', 6, 8];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $selectBuilder->getFlattenedIntegerFields();
+    }
+
+    public function testGetFlattenedIntegerFieldsWrongNonNumberType()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = [5, true, 6, 8];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $selectBuilder->getFlattenedIntegerFields();
+    }
+
+    public function testGetFlattenedFloatFieldsWrongScalarType()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = [5, 6, 8, '3.7nonnumber'];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $selectBuilder->getFlattenedFloatFields();
+    }
+
+    public function testGetFlattenedFloatFieldsWrongNonNumberType()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = [5, 6, 8, true];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $selectBuilder->getFlattenedFloatFields();
+    }
+
+    public function testGetFlattenedBooleanFieldsWrongType()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = [true, false, true, 'dada', false];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $selectBuilder->getFlattenedBooleanFields();
+    }
+
+    public function testGetFlattenedStringFieldsWrongType()
+    {
+        $this->expectException(DBInvalidOptionException::class);
+
+        $selectBuilder = new SelectEntries($this->db);
+
+        $expectedResult = ['dada', '5', 'rtew', false, '7777.3'];
+
+        $this->db
+            ->shouldReceive('fetchAllAndFlatten')
+            ->with([
+                'tables' => [
+                    'table6',
+                    'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+                ],
+                'where' => [
+                    'g.somefield' => 33,
+                ],
+                'group' => [
+                    'g.somefield',
+                ],
+                'order' => [
+                    'e.id',
+                ],
+                'fields' => [
+                    'field1',
+                    'field6' => 'somefield',
+                ],
+                'limit' => 55,
+                'offset' => 13,
+                'lock' => true,
+            ])
+            ->andReturn($expectedResult);
+
+        $selectBuilder
+            ->fields([
+                'field1',
+                'field6' => 'somefield',
+            ])
+            ->inTables([
+                'table6',
+                'otherTable g LEFT JOIN superTable e ON (g.id = e.id AND g.name=?)' => 'Jane',
+            ])
+            ->where([
+                'g.somefield' => 33,
+            ])
+            ->groupBy([
+                'g.somefield',
+            ])
+            ->orderBy([
+                'e.id',
+            ])
+            ->limitTo(55)
+            ->startAt(13)
+            ->blocking();
+
+        $selectBuilder->getFlattenedStringFields();
     }
 }

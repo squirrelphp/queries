@@ -117,7 +117,7 @@ class DBErrorHandler implements DBRawInterface
             $func,
             $arguments,
             $this->connectionRetries,
-            $this->lockRetries
+            $this->lockRetries,
         );
     }
 
@@ -156,7 +156,7 @@ class DBErrorHandler implements DBRawInterface
                     DBLockException::class, // exception class to create
                     DBInterface::class, // origin classes to skip when backtracking
                     $e->getMessage(), // message of the new exception
-                    $e // original/previous exception
+                    $e, // original/previous exception
                 );
             }
 
@@ -188,7 +188,7 @@ class DBErrorHandler implements DBRawInterface
                     DBConnectionException::class, // exception class to create
                     DBInterface::class, // origin classes to skip when backtracking
                     $e->getMessage(), // message of the new exception
-                    $e // original/previous exception
+                    $e, // original/previous exception
                 );
             }
 
@@ -213,7 +213,7 @@ class DBErrorHandler implements DBRawInterface
                 DBDriverException::class, // exception class to create
                 DBInterface::class, // origin classes to skip when backtracking
                 $e->getMessage(), // message of the new exception
-                $e // original/previous exception
+                $e, // original/previous exception
             );
         } catch (\Exception | \Throwable $e) { // Other exception, throw it as is, we do not know how to deal with it
             // Attempt to roll back, suppress any possible exceptions
@@ -321,7 +321,7 @@ class DBErrorHandler implements DBRawInterface
                     DBConnectionException::class,
                     DBInterface::class,
                     $e->getMessage(),
-                    $e
+                    $e,
                 );
             }
 
@@ -339,7 +339,7 @@ class DBErrorHandler implements DBRawInterface
                     DBLockException::class,
                     DBInterface::class,
                     $e->getMessage(),
-                    $e
+                    $e,
                 );
             }
 
@@ -353,7 +353,7 @@ class DBErrorHandler implements DBRawInterface
                 DBDriverException::class,
                 DBInterface::class,
                 $e->getMessage(),
-                $e
+                $e,
             );
         }
     }

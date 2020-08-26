@@ -34,7 +34,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $this->connection = $connection;
         $this->structuredQueryConverter = new DBConvertStructuredQueryToSQL(
             [$this, 'quoteIdentifier'],
-            [$this, 'quoteExpression']
+            [$this, 'quoteExpression'],
         );
     }
 
@@ -89,7 +89,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'Invalid select query class provided'
+                'Invalid select query class provided',
             );
         }
 
@@ -107,7 +107,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'Invalid select query class provided'
+                'Invalid select query class provided',
             );
         }
 
@@ -157,7 +157,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No table name specified for insert'
+                'No table name specified for insert',
             );
         }
 
@@ -185,7 +185,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             $statement->bindValue(
                 $paramCounter++,
                 ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
-                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
         $statement->execute();
@@ -207,7 +207,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No "changes" definition'
+                'No "changes" definition',
             );
         }
 
@@ -232,7 +232,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No table name specified for delete'
+                'No table name specified for delete',
             );
         }
 
@@ -259,7 +259,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             $statement->bindValue(
                 $paramCounter++,
                 ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
-                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR
+                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
         $statement->execute();
@@ -349,7 +349,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             $sql = $this->connection->getDatabasePlatform()->modifyLimitQuery(
                 $sql,
                 $select['limit'] ?? null,
-                $select['offset'] ?? null
+                $select['offset'] ?? null,
             );
         }
 
@@ -424,7 +424,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No table name specified for upsert'
+                'No table name specified for upsert',
             );
         }
 
@@ -433,7 +433,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No insert data specified for upsert for table "' . $tableName . '"'
+                'No insert data specified for upsert for table "' . $tableName . '"',
             );
         }
 
@@ -442,7 +442,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No index specified for upsert for table "' . $tableName . '"'
+                'No index specified for upsert for table "' . $tableName . '"',
             );
         }
 
@@ -452,7 +452,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
                 throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
-                    'Index values are missing in insert row values'
+                    'Index values are missing in insert row values',
                 );
             }
         }

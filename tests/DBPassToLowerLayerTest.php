@@ -241,7 +241,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
                 \Mockery::mustBe($tableName),
                 \Mockery::mustBe($row),
                 \Mockery::mustBe($indexColumns),
-                \Mockery::mustBe($rowUpdates)
+                \Mockery::mustBe($rowUpdates),
             );
 
         // Make the trait function call

@@ -10,7 +10,7 @@ use Squirrel\Queries\DBSelectQueryInterface;
  *
  * @implements \Iterator<int,array>
  */
-class SelectIterator implements \Iterator
+class SelectIterator implements \Iterator, BuilderInterface
 {
     use SelectIteratorTrait;
 

@@ -7,7 +7,7 @@ use Squirrel\Queries\DBInterface;
 /**
  * Count query builder as a fluent object - build query and return entries or flattened fields
  */
-class CountEntries
+class CountEntries implements BuilderInterface
 {
     private DBInterface $db;
 

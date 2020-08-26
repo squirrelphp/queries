@@ -66,7 +66,7 @@ class DBConvertStructuredQueryToSQL
                 throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
-                    'Unknown option key ' . Debug::sanitizeData($optKey)
+                    'Unknown option key ' . Debug::sanitizeData($optKey),
                 );
             }
 
@@ -79,7 +79,7 @@ class DBConvertStructuredQueryToSQL
                             DBInvalidOptionException::class,
                             DBInterface::class,
                             'Option key ' . Debug::sanitizeData($optKey)
-                            . ' had an invalid value which cannot be converted correctly'
+                            . ' had an invalid value which cannot be converted correctly',
                         );
                     }
 
@@ -99,7 +99,7 @@ class DBConvertStructuredQueryToSQL
                             DBInvalidOptionException::class,
                             DBInterface::class,
                             'Option key ' . Debug::sanitizeData($optKey) .
-                            ' had an invalid value which cannot be converted correctly'
+                            ' had an invalid value which cannot be converted correctly',
                         );
                     }
 
@@ -110,7 +110,7 @@ class DBConvertStructuredQueryToSQL
                         throw Debug::createException(
                             DBInvalidOptionException::class,
                             DBInterface::class,
-                            'Option key ' . Debug::sanitizeData($optKey) . ' had a non-array value'
+                            'Option key ' . Debug::sanitizeData($optKey) . ' had a non-array value',
                         );
                     }
                     break;
@@ -124,7 +124,7 @@ class DBConvertStructuredQueryToSQL
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'No tables specified for query'
+                'No tables specified for query',
             );
         }
 
@@ -133,7 +133,7 @@ class DBConvertStructuredQueryToSQL
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'Below zero "limit" definition'
+                'Below zero "limit" definition',
             );
         }
 
@@ -142,7 +142,7 @@ class DBConvertStructuredQueryToSQL
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
-                'Below zero "offset" definition'
+                'Below zero "offset" definition',
             );
         }
 
@@ -171,7 +171,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "fields" definition, value for ' .
-                    Debug::sanitizeData($name) . ' is not a string'
+                    Debug::sanitizeData($name) . ' is not a string',
                 );
             }
 
@@ -181,7 +181,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "fields" definition, name ' .
-                    Debug::sanitizeData($name) . ' contains a colon'
+                    Debug::sanitizeData($name) . ' contains a colon',
                 );
             }
 
@@ -243,7 +243,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "tables" definition, expression is not a string: ' .
-                    Debug::sanitizeData($expression)
+                    Debug::sanitizeData($expression),
                 );
             }
 
@@ -293,7 +293,7 @@ class DBConvertStructuredQueryToSQL
                 throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
-                    'Invalid "changes" definition, expression is not a string: ' . Debug::sanitizeData($expression)
+                    'Invalid "changes" definition, expression is not a string: ' . Debug::sanitizeData($expression),
                 );
             }
 
@@ -305,7 +305,7 @@ class DBConvertStructuredQueryToSQL
                         DBInvalidOptionException::class,
                         DBInterface::class,
                         'Invalid "changes" definition, no value specified: ' .
-                        Debug::sanitizeData($expression) . ' => ' . Debug::sanitizeData($values)
+                        Debug::sanitizeData($expression) . ' => ' . Debug::sanitizeData($values),
                     );
                 }
 
@@ -315,7 +315,7 @@ class DBConvertStructuredQueryToSQL
                         DBInvalidOptionException::class,
                         DBInterface::class,
                         'Invalid "changes" definition, colon used in a field name ' .
-                        'to value assignment: ' . Debug::sanitizeData($expression)
+                        'to value assignment: ' . Debug::sanitizeData($expression),
                     );
                 }
 
@@ -342,7 +342,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid query variable specified, it is non-scalar and no large object: ' .
-                    Debug::sanitizeData($expression) . ' => ' . Debug::sanitizeData($values)
+                    Debug::sanitizeData($expression) . ' => ' . Debug::sanitizeData($values),
                 );
             }
 
@@ -384,7 +384,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "where" definition, expression is not a string: ' .
-                    Debug::sanitizeData($expression)
+                    Debug::sanitizeData($expression),
                 );
             }
 
@@ -411,7 +411,7 @@ class DBConvertStructuredQueryToSQL
                         DBInvalidOptionException::class,
                         DBInterface::class,
                         'Invalid "where" definition, simple expression has no values: ' .
-                        Debug::sanitizeData($expression)
+                        Debug::sanitizeData($expression),
                     );
                 }
 
@@ -459,7 +459,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "group" definition, expression is not a string: ' .
-                    Debug::sanitizeData($expression)
+                    Debug::sanitizeData($expression),
                 );
             }
 
@@ -492,7 +492,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "order" definition, expression is not a string: ' .
-                    Debug::sanitizeData($expression)
+                    Debug::sanitizeData($expression),
                 );
             }
 
@@ -502,7 +502,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid "order" definition, order is not ASC or DESC: ' .
-                    Debug::sanitizeData($order)
+                    Debug::sanitizeData($order),
                 );
             }
 
@@ -549,7 +549,7 @@ class DBConvertStructuredQueryToSQL
                     DBInvalidOptionException::class,
                     DBInterface::class,
                     'Invalid query variable specified, it is non-scalar: ' .
-                    Debug::sanitizeData($newValues)
+                    Debug::sanitizeData($newValues),
                 );
             }
 

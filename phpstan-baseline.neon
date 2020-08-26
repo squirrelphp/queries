@@ -1,2 +1,22 @@
 parameters:
 	ignoreErrors:
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedIntegerFields\\(\\) should return array\\<int\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: src/Builder/SelectEntries.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedFloatFields\\(\\) should return array\\<float\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: src/Builder/SelectEntries.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedStringFields\\(\\) should return array\\<string\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: src/Builder/SelectEntries.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedBooleanFields\\(\\) should return array\\<bool\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: src/Builder/SelectEntries.php
+

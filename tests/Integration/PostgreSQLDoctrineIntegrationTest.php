@@ -58,7 +58,7 @@ class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                current_location POINT,
                ip_address INET,
                create_date INTEGER NOT NULL
-             );'
+             );',
         );
 
         self::$db->insert('locations', [

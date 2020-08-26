@@ -16,7 +16,7 @@ abstract class DBInterfaceForTests implements DBInterface
                 function ($p) {
                     return '"' . \str_replace('"', '""', $p) . '"';
                 },
-                \explode(".", $identifier)
+                \explode(".", $identifier),
             );
 
             return \implode(".", $parts);

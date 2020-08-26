@@ -19,7 +19,7 @@
         }
     ],
     "require": {
-        "php": "^7.4",
+        "php": ">=7.4",
         "ext-pdo": "*",
         "squirrelphp/debug": "^0.5",
         "doctrine/dbal": "^2.5"

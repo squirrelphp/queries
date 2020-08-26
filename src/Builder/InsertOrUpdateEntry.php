@@ -7,7 +7,7 @@ use Squirrel\Queries\DBInterface;
 /**
  * Upsert query builder as a fluent object - build query and execute it
  */
-class InsertOrUpdateEntry
+class InsertOrUpdateEntry implements BuilderInterface
 {
     private DBInterface $db;
     private string $table = '';

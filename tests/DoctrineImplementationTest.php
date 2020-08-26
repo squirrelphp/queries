@@ -47,7 +47,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
                         function ($p) {
                             return '"' . str_replace('"', '""', $p) . '"';
                         },
-                        explode(".", $identifier)
+                        explode(".", $identifier),
                     );
 
                     return implode(".", $parts);
