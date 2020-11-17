@@ -3,9 +3,9 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\ResultStatement;
-use Doctrine\DBAL\FetchMode;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Result;
+use Doctrine\DBAL\Statement;
 use Squirrel\Queries\Doctrine\DBSQLiteImplementation;
 
 class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
@@ -93,8 +93,9 @@ class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
             ->once()
             ->andReturn($platform);
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -107,21 +108,21 @@ class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchOne($structuredQuery);

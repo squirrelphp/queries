@@ -3,9 +3,9 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\ResultStatement;
-use Doctrine\DBAL\FetchMode;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Result;
+use Doctrine\DBAL\Statement;
 use Squirrel\Queries\DBSelectQueryInterface;
 use Squirrel\Queries\Doctrine\DBAbstractImplementation;
 use Squirrel\Queries\Doctrine\DBSelectQuery;
@@ -131,8 +131,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT blabla FROM yudihui';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -145,30 +146,30 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select($query, $vars);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
     public function testFetch()
     {
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine result
+        $statementResult = \Mockery::mock(Result::class);
 
         // Select query object
-        $selectQuery = new DBSelectQuery($statement);
+        $selectQuery = new DBSelectQuery($statementResult);
 
         // Return value from fetch
         $returnValue = ['fieldName' => 'dada'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // Make the fetch call
@@ -180,15 +181,15 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testClear()
     {
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine result
+        $statementResult = \Mockery::mock(Result::class);
 
         // Select query object
-        $selectQuery = new DBSelectQuery($statement);
+        $selectQuery = new DBSelectQuery($statementResult);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Make the fetch call
@@ -204,8 +205,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT blabla FROM yudihui';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -218,21 +220,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = ['dada'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchOne($query, $vars);
@@ -247,8 +249,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT blabla FROM yudihui';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -261,21 +264,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = ['dada', 'mumu', 'hihihi'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetchAll')
+        $statementResult
+            ->shouldReceive('fetchAllAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchAll($query, $vars);
@@ -302,8 +305,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
         $vars = [5, 'Dada', 1, 43535];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -318,11 +322,12 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Insert query call
@@ -343,8 +348,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (?,?,?)';
         $vars = [5, 'Dada', 43535];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -359,11 +365,12 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $this->connection
@@ -420,8 +427,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
         $vars = [5, 'Dada', 1, 43535];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -436,17 +444,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(5);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Insert query call
@@ -466,8 +475,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (5,"Dada",4534)';
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -480,17 +490,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(5);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Insert query call
@@ -510,8 +521,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -526,17 +538,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(1);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $this->connection
@@ -561,8 +574,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -577,17 +591,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(0);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Expected query and parameters
@@ -595,7 +610,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $insertVars = [13, 'Andy'];
 
         // Doctrine statement
-        $insertStatement = \Mockery::mock(ResultStatement::class);
+        $insertStatement = \Mockery::mock(Statement::class);
+        $insertStatementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -610,17 +626,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $insertStatement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($insertStatementResult);
 
         // "RowCount" call on doctrine result statement
-        $insertStatement
+        $insertStatementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(1);
 
         // Close result set
-        $insertStatement
-            ->shouldReceive('closeCursor')
+        $insertStatementResult
+            ->shouldReceive('free')
             ->once();
 
         $this->connection
@@ -645,8 +662,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -661,17 +679,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(0);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Expected query and parameters
@@ -679,7 +698,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $insertVars = [13, 'Andy'];
 
         // Doctrine statement
-        $insertStatement = \Mockery::mock(ResultStatement::class);
+        $insertStatement = \Mockery::mock(Statement::class);
+        $insertStatementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -694,17 +714,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $insertStatement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($insertStatementResult);
 
         // "RowCount" call on doctrine result statement
-        $insertStatement
+        $insertStatementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(1);
 
         // Close result set
-        $insertStatement
-            ->shouldReceive('closeCursor')
+        $insertStatementResult
+            ->shouldReceive('free')
             ->once();
 
         $this->connection
@@ -725,8 +746,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'DELETE FROM "tablename" WHERE "mamamia"=? AND "fumbal" IN (?,?,?)';
         $vars = [13, 3, 5, 9];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -741,17 +763,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(5);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Insert query call
@@ -769,8 +792,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         // Expected query and parameters
         $query = 'DELETE FROM "tablename" WHERE ("mamamia"=1)';
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -783,17 +807,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(5);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Insert query call
@@ -862,8 +887,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT "blabla" FROM "yudihui" WHERE "lala"=?';
         $vars = [5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -876,7 +902,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select([
             'fields' => [
@@ -891,7 +918,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
 
         $result = $this->db->select([
             'field' => 'blabla',
@@ -902,7 +929,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
     public function testSelectStructuredCatchAll()
@@ -911,8 +938,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT "a".*,"b"."lala" FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
         $vars = [5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -925,7 +953,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select([
             'fields' => [
@@ -942,14 +971,15 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
 
         // Query parameters
         $query = 'SELECT a.*,"b"."lala" FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
         $vars = [5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -962,7 +992,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select([
             'fields' => [
@@ -979,7 +1010,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
     public function testSelectStructuredCatchAllNoFields()
@@ -988,8 +1019,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT * FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
         $vars = [5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1002,7 +1034,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select([
             'tables' => [
@@ -1015,7 +1048,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
     public function testSelectStructuredNoWhere()
@@ -1024,8 +1057,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT * FROM "yudihui" "a","ahoi" "b"';
         $vars = [];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1038,7 +1072,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select([
             'tables' => [
@@ -1049,7 +1084,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
     public function testSelectStructuredComplicated()
@@ -1078,8 +1113,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->once()
             ->andReturn($platform);
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1092,7 +1128,8 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $result = $this->db->select([
             'fields' => [
@@ -1125,7 +1162,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statement), $result);
+        $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
     public function testFetchOneStructured()
@@ -1158,8 +1195,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->once()
             ->andReturn($platform);
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1172,21 +1210,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchOne($structuredQuery);
@@ -1216,8 +1254,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1230,21 +1269,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = [['id' => '5', 'hash' => 'fhsdkj']];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetchAll')
+        $statementResult
+            ->shouldReceive('fetchAllAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchAll($structuredQuery);
@@ -1274,8 +1313,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1288,21 +1328,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = [['id' => '5', 'hash' => 'fhsdkj']];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetchAll')
+        $statementResult
+            ->shouldReceive('fetchAllAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchAllAndFlatten($structuredQuery);
@@ -1360,8 +1400,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->once()
             ->andReturn($platform);
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1374,21 +1415,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchOne($structuredQuery);
@@ -1432,8 +1473,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1446,21 +1488,21 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         // Return value from fetch
         $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
 
         // Fetch result set
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn($returnValue);
 
         // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchOne($structuredQuery);
@@ -1483,8 +1525,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->once()
             ->andReturn($platform);
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1499,17 +1542,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(33);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->update('blobs.aa_sexy', [
@@ -1526,8 +1570,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=?,"nullentry"=?,"active"=? WHERE "blabla"=?';
         $vars = ['nicevalue', null, 1, 5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -1542,17 +1587,18 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // "RowCount" call on doctrine result statement
-        $statement
+        $statementResult
             ->shouldReceive('rowCount')
             ->once()
             ->andReturn(33);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->update('blobs.aa_sexy', [

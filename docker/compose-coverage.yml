@@ -1,11 +1,12 @@
 version: "3.7"
 services:
-    squirrel_queries_test:
+    squirrel_queries_coverage:
         image: thecodingmachine/php:7.4-v3-cli
-        container_name: squirrel_queries_test
+        container_name: squirrel_queries_coverage
         tty: true
         working_dir: /usr/src/app
-        command: ["vendor/bin/phpunit", "--colors=always", "--filter", "Integration"]
+        # --path-coverage could be added later, it is much too slow currently and only supported by xdebug
+        command: [ "vendor/bin/phpunit", "--colors=always", "--stop-on-defect", "--coverage-html", "tests/_reports"]
         volumes:
             - ./src:/usr/src/app/src
             - ./tests:/usr/src/app/tests
@@ -13,6 +14,10 @@ services:
             - ./phpunit.xml.dist:/usr/src/app/phpunit.xml.dist
             - ./vendor-bin:/usr/src/app/vendor-bin
         environment:
+            # We currently use PCOV because it is at least 8x faster
+            # - 3 seconds compared to 23 seconds (or 5 minutes with path coverage enabled)
+            PHP_EXTENSION_XDEBUG: 1
+            #PHP_EXTENSION_PCOV: 1
             PHP_EXTENSION_APCU: 0
             PHP_EXTENSION_REDIS: 0
             PHP_EXTENSION_SQLITE3: 1
@@ -26,6 +31,7 @@ services:
             SQUIRREL_TEST_MYSQL: 'mysql://user:password@squirrel_queries_mysql/shop'
             SQUIRREL_TEST_MARIADB: 'mysql://user:password@squirrel_queries_mariadb/shop'
             STARTUP_COMMAND_1: composer update --no-scripts --quiet
+            STARTUP_COMMAND_2: rm -rf /usr/src/app/tests/_reports/*
         depends_on:
             - squirrel_queries_postgres
             - squirrel_queries_mysql

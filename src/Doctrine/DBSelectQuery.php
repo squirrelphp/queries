@@ -2,19 +2,19 @@
 
 namespace Squirrel\Queries\Doctrine;
 
-use Doctrine\DBAL\Driver\ResultStatement;
+use Doctrine\DBAL\Result;
 use Squirrel\Queries\DBSelectQueryInterface;
 
 class DBSelectQuery implements DBSelectQueryInterface
 {
-    private ResultStatement $statement;
+    private Result $statement;
 
-    public function __construct(ResultStatement $statement)
+    public function __construct(Result $statement)
     {
         $this->statement = $statement;
     }
 
-    public function getStatement(): ResultStatement
+    public function getStatement(): Result
     {
         return $this->statement;
     }

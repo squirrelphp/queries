@@ -379,11 +379,6 @@ class DBErrorHandler implements DBRawInterface
             // Close connection and establish a new connection
             $connection->close();
             $connection->connect();
-
-            // If we still do not have a connection we need to try again
-            if ($connection->ping() === false) {
-                return $this->attemptReconnect($connectionRetries);
-            }
         } catch (ConnectionException $e) { // Connection could not be established - try again
             return $this->attemptReconnect($connectionRetries);
         }

@@ -52,7 +52,7 @@ class DBMySQLImplementation extends DBAbstractImplementation
             );
         }
 
-        $statement->execute();
-        $statement->closeCursor();
+        $statementResult = $statement->execute();
+        $statementResult->free();
     }
 }

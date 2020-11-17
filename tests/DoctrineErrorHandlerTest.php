@@ -3,7 +3,7 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Driver\Connection;
-use Doctrine\DBAL\Driver\PDOException;
+use Doctrine\DBAL\Driver\PDO\Exception as PDOException;
 use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\DBAL\Exception\DriverException;
@@ -369,8 +369,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
             ->andThrow(
                 new DeadlockException(
-                    'Deadlock occured!',
-                    new PDOException(new \PDOException('pdo deadlock exception')),
+                    PDOException::new(new \PDOException('pdo deadlock exception')),
+                    null,
                 ),
             );
 
@@ -438,8 +438,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
             ->andThrow(
                 new ConnectionException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
@@ -472,12 +472,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('connect')
             ->once()
             ->withNoArgs();
-
-        $connection
-            ->shouldReceive('ping')
-            ->once()
-            ->withNoArgs()
-            ->andReturn(true);
 
         $lowerLayer
             ->shouldReceive('setTransaction')
@@ -523,8 +517,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
             ->andThrow(
                 new ConnectionException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
@@ -555,31 +549,19 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
         $connection
             ->shouldReceive('connect')
-            ->times(3)
-            ->withNoArgs();
-
-        $connection
-            ->shouldReceive('ping')
-            ->once()
-            ->withNoArgs()
-            ->andReturn(false);
-
-        $connection
-            ->shouldReceive('ping')
-            ->once()
+            ->times(2)
             ->withNoArgs()
             ->andThrow(
                 new ConnectionException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
         $connection
-            ->shouldReceive('ping')
-            ->once()
-            ->withNoArgs()
-            ->andReturn(true);
+            ->shouldReceive('connect')
+            ->times(1)
+            ->withNoArgs();
 
         $lowerLayer
             ->shouldReceive('setTransaction')
@@ -627,8 +609,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
             ->andThrow(
                 new DeadlockException(
-                    'Deadlock occured!',
-                    new PDOException(new \PDOException('pdo deadlock exception')),
+                    PDOException::new(new \PDOException('pdo deadlock exception')),
+                    null,
                 ),
             );
 
@@ -689,8 +671,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
             ->andThrow(
                 new ConnectionException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
@@ -757,8 +739,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
             ->andThrow(
                 new DriverException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
@@ -862,8 +844,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new DeadlockException(
-                    'Deadlock occured!',
-                    new PDOException(new \PDOException('pdo deadlock exception')),
+                    PDOException::new(new \PDOException('pdo deadlock exception')),
+                    null,
                 ),
             );
 
@@ -896,8 +878,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new DeadlockException(
-                    'Deadlock occured!',
-                    new PDOException(new \PDOException('pdo deadlock exception')),
+                    PDOException::new(new \PDOException('pdo deadlock exception')),
+                    null,
                 ),
             );
 
@@ -930,8 +912,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new ConnectionException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
@@ -964,8 +946,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new ConnectionException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 
@@ -1022,8 +1004,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new DriverException(
-                    'Connection lost',
-                    new PDOException(new \PDOException('MySQL server has gone away')),
+                    PDOException::new(new \PDOException('MySQL server has gone away')),
+                    null,
                 ),
             );
 

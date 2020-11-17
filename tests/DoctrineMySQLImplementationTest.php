@@ -3,6 +3,7 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
 use Squirrel\Queries\Doctrine\DBMySQLImplementation;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
@@ -76,15 +77,17 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             1,
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -94,8 +97,8 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
@@ -165,15 +168,17 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             'laaaast',
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -183,8 +188,8 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
@@ -240,15 +245,17 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             'laaaast',
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -258,8 +265,8 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
@@ -302,15 +309,17 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             6,
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -320,8 +329,8 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert

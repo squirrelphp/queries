@@ -20,3 +20,8 @@ parameters:
 			count: 1
 			path: src/Builder/SelectEntries.php
 
+		-
+			message: "#^Cannot access offset 'v' on array\\<string, mixed\\>\\|false\\.$#"
+			count: 1
+			path: src/Doctrine/DBSQLiteImplementation.php
+

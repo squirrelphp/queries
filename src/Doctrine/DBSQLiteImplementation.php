@@ -2,6 +2,10 @@
 
 namespace Squirrel\Queries\Doctrine;
 
+use Squirrel\Debug\Debug;
+use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\Exception\DBInvalidOptionException;
+
 /**
  * DB SQLite implementation using Doctrine DBAL with custom upsert functionality
  *
@@ -23,7 +27,20 @@ class DBSQLiteImplementation extends DBPostgreSQLImplementation
         if ($this->sqliteVersion === null) {
             $connection = $this->getConnection();
 
-            $this->sqliteVersion = \floatval($connection->query('select sqlite_version() AS "v"')->fetch()['v']);
+            $statement = $connection->prepare('select sqlite_version() AS "v"');
+            $statementResult = $statement->execute();
+            $result = $statementResult->fetchAssociative();
+            $statementResult->free();
+
+            if (!isset($result['v'])) {
+                throw Debug::createException(
+                    DBInvalidOptionException::class,
+                    DBInterface::class,
+                    'SQLite version could not be retrieved',
+                );
+            }
+
+            $this->sqliteVersion = \floatval($result['v']);
         }
 
         // SQLite below version 3.24 does not offer native upsert, so emulate it

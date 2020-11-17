@@ -3,7 +3,6 @@
 namespace Squirrel\Queries\Doctrine;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\FetchMode;
 use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBRawInterface;
@@ -76,10 +75,10 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Prepare and execute query
         $statement = $this->connection->prepare($query);
-        $statement->execute($vars);
+        $statementResult = $statement->execute($vars);
 
         // Return select query object with PDO statement
-        return new DBSelectQuery($statement);
+        return new DBSelectQuery($statementResult);
     }
 
     public function fetch(DBSelectQueryInterface $selectQuery): ?array
@@ -94,7 +93,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Get the result - can be an array of the entry, or false if it is empty
-        $result = $selectQuery->getStatement()->fetch(FetchMode::ASSOCIATIVE);
+        $result = $selectQuery->getStatement()->fetchAssociative();
 
         // Return one result as an array
         return ($result === false ? null : $result);
@@ -112,7 +111,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Close the result set
-        $selectQuery->getStatement()->closeCursor();
+        $selectQuery->getStatement()->free();
     }
 
     public function fetchOne($query, array $vars = []): ?array
@@ -135,11 +134,11 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Prepare and execute query
         $statement = $this->connection->prepare($query);
-        $statement->execute($vars);
+        $statementResult = $statement->execute($vars);
 
         // Get result and close result set
-        $result = $statement->fetchAll(FetchMode::ASSOCIATIVE);
-        $statement->closeCursor();
+        $result = $statementResult->fetchAllAssociative();
+        $statementResult->free();
 
         // Return query result
         return $result;
@@ -188,8 +187,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
                 ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
-        $statement->execute();
-        $statement->closeCursor();
+        $statementResult = $statement->execute();
+        $statementResult->free();
 
         // No autoincrement index - no insert ID return value needed
         if (\strlen($autoIncrementIndex) === 0) {
@@ -262,13 +261,13 @@ abstract class DBAbstractImplementation implements DBRawInterface
                 ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
-        $statement->execute();
+        $statementResult = $statement->execute();
 
         // Get affected rows
-        $result = $statement->rowCount();
+        $result = $statementResult->rowCount();
 
         // Close query
-        $statement->closeCursor();
+        $statementResult->free();
 
         // Return affected rows
         return $result;

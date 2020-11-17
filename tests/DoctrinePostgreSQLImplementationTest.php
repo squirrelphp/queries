@@ -3,8 +3,7 @@
 namespace Squirrel\Queries\Tests;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\ResultStatement;
-use Doctrine\DBAL\FetchMode;
+use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
 use Squirrel\Queries\Doctrine\DBPostgreSQLImplementation;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
@@ -55,8 +54,9 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT blob FROM yudihui WHERE active = ? AND name = ? AND balance = ?';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -69,22 +69,22 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $fp = \fopen('php://temp', 'rb+');
         \fwrite($fp, 'binary data!');
         \fseek($fp, 0);
 
-        $statement
-            ->shouldReceive('fetch')
+        $statementResult
+            ->shouldReceive('fetchAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn([
                 'blob' => $fp,
             ]);
 
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchOne($query, $vars);
@@ -99,8 +99,9 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'SELECT blob FROM yudihui WHERE active = ? AND name = ? AND balance = ?';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement
-        $statement = \Mockery::mock(ResultStatement::class);
+        // Doctrine statement and result
+        $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         // "Prepare" call to doctrine connection
         $this->connection
@@ -113,22 +114,22 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->with(\Mockery::mustBe($vars));
+            ->with(\Mockery::mustBe($vars))
+            ->andReturn($statementResult);
 
         $fp = \fopen('php://temp', 'rb+');
         \fwrite($fp, 'binary data!');
         \fseek($fp, 0);
 
-        $statement
-            ->shouldReceive('fetchAll')
+        $statementResult
+            ->shouldReceive('fetchAllAssociative')
             ->once()
-            ->with(\Mockery::mustBe(FetchMode::ASSOCIATIVE))
             ->andReturn([[
                 'blob' => $fp,
             ]]);
 
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         $result = $this->db->fetchAll($query, $vars);
@@ -167,15 +168,17 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             1,
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -185,8 +188,8 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
@@ -257,15 +260,17 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             'laaaast',
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -275,8 +280,8 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
@@ -333,15 +338,17 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             'laaaast',
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
+            ->withNoArgs()
+            ->andReturn($statementResult);
 
         // SQL query should be received by "prepare"
         $this->connection
@@ -351,8 +358,8 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
@@ -394,17 +401,19 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             6,
         ];
 
-        // Statement and the data values it should receive
+        // Doctrine statement and result
         $statement = \Mockery::mock(Statement::class);
+        $statementResult = \Mockery::mock(Result::class);
 
         $this->bindValues($statement, $vars);
 
         $statement
             ->shouldReceive('execute')
             ->once()
-            ->withNoArgs();
-        $statement
-            ->shouldReceive('fetchAll')
+            ->withNoArgs()
+            ->andReturn($statementResult);
+        $statementResult
+            ->shouldReceive('fetchAllAssociative')
             ->once()
             ->andReturn([
                 ['case' => 'update'],
@@ -418,8 +427,8 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
             ->andReturn($statement);
 
         // Close result set
-        $statement
-            ->shouldReceive('closeCursor')
+        $statementResult
+            ->shouldReceive('free')
             ->once();
 
         // Test the upsert
