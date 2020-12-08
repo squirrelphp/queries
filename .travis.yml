@@ -2,9 +2,11 @@ env:
     global:
         - CC_TEST_REPORTER_ID=c04f7d15abce0dd4c367dfd8fb1828c95ba09a9400f2fd506b9934fb38060b93
         - GIT_COMMITTED_AT=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then git log -1 --pretty=format:%ct; else git log -1 --skip 1 --pretty=format:%ct; fi)
+        - XDEBUG_MODE=coverage
 language: php
 php:
     - '7.4'
+    - '8.0'
 
 before_script:
     - composer self-update
