@@ -14,11 +14,9 @@ use Squirrel\Queries\Builder\UpdateEntries;
  */
 class DBBuilder implements DBBuilderInterface
 {
-    private DBInterface $db;
-
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function count(): CountEntries
@@ -51,7 +49,7 @@ class DBBuilder implements DBBuilderInterface
         return new DeleteEntries($this->db);
     }
 
-    public function transaction(callable $func, ...$arguments)
+    public function transaction(callable $func, mixed ...$arguments): mixed
     {
         return $this->db->transaction($func, ...$arguments);
     }

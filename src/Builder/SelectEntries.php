@@ -13,8 +13,6 @@ class SelectEntries implements BuilderInterface, \IteratorAggregate
 {
     use FlattenedFieldsWithTypeTrait;
 
-    private DBInterface $db;
-
     /**
      * @var array<int|string,string> Only retrieve these fields of the tables
      */
@@ -55,9 +53,9 @@ class SelectEntries implements BuilderInterface, \IteratorAggregate
      */
     private bool $blocking = false;
 
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function field(string $getThisField): self
@@ -101,7 +99,7 @@ class SelectEntries implements BuilderInterface, \IteratorAggregate
     /**
      * @param array<int|string,string>|string $orderByClauses
      */
-    public function orderBy($orderByClauses): self
+    public function orderBy(array|string $orderByClauses): self
     {
         if (\is_string($orderByClauses)) {
             $orderByClauses = [$orderByClauses];
@@ -114,7 +112,7 @@ class SelectEntries implements BuilderInterface, \IteratorAggregate
     /**
      * @param array<int|string,string>|string $groupByClauses
      */
-    public function groupBy($groupByClauses): self
+    public function groupBy(array|string $groupByClauses): self
     {
         if (\is_string($groupByClauses)) {
             $groupByClauses = [$groupByClauses];

@@ -11,7 +11,6 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
  */
 class DeleteEntries implements BuilderInterface
 {
-    private DBInterface $db;
     private string $table = '';
 
     /**
@@ -24,9 +23,9 @@ class DeleteEntries implements BuilderInterface
      */
     private bool $confirmNoWhere = false;
 
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function inTable(string $table): self

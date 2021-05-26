@@ -54,9 +54,9 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         return $result;
     }
 
-    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
+    public function insertOrUpdate(string $table, array $row = [], array $index = [], ?array $update = null): void
     {
-        [$query, $queryValues] = $this->generateUpsertSQLAndParameters($tableName, $row, $indexColumns, $rowUpdates);
+        [$query, $queryValues] = $this->generateUpsertSQLAndParameters($table, $row, $index, $update);
 
         $connection = $this->getConnection();
         $statement = $connection->prepare($query);
@@ -74,7 +74,7 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
             );
         }
 
-        $statementResult = $statement->execute();
+        $statementResult = $statement->executeQuery();
         $statementResult->free();
     }
 
@@ -82,7 +82,7 @@ class DBPostgreSQLImplementation extends DBAbstractImplementation
         string $tableName,
         array $row = [],
         array $indexColumns = [],
-        ?array $rowUpdates = null
+        ?array $rowUpdates = null,
     ): array {
         $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
 

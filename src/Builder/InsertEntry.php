@@ -9,7 +9,6 @@ use Squirrel\Queries\DBInterface;
  */
 class InsertEntry implements BuilderInterface
 {
-    private DBInterface $db;
     private string $table = '';
 
     /**
@@ -17,9 +16,9 @@ class InsertEntry implements BuilderInterface
      */
     private array $values = [];
 
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function inTable(string $table): self

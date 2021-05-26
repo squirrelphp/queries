@@ -9,11 +9,11 @@ use Squirrel\Queries\LargeObject;
  */
 class DBMySQLImplementation extends DBAbstractImplementation
 {
-    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
+    public function insertOrUpdate(string $table, array $row = [], array $index = [], ?array $update = null): void
     {
-        $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
+        $this->validateMandatoryUpsertParameters($table, $row, $index);
 
-        $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
+        $update = $this->prepareUpsertRowUpdates($update, $row, $index);
 
         // Divvy up the field names, values and placeholders for the INSERT part
         $columnsForInsert = \array_map([$this, 'quoteIdentifier'], \array_keys($row));
@@ -21,17 +21,17 @@ class DBMySQLImplementation extends DBAbstractImplementation
         $queryValues = \array_values($row);
 
         // No update, so just make a dummy update setting the unique index fields
-        if (\count($rowUpdates) === 0) {
-            foreach ($indexColumns as $fieldName) {
-                $rowUpdates[] = ':' . $fieldName . ':=:' . $fieldName . ':';
+        if (\count($update) === 0) {
+            foreach ($index as $fieldName) {
+                $update[] = ':' . $fieldName . ':=:' . $fieldName . ':';
             }
         }
 
         // Generate update part of the query
-        [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($rowUpdates, $queryValues);
+        [$updatePart, $queryValues] = $this->structuredQueryConverter->buildChanges($update, $queryValues);
 
         // Generate the insert query
-        $query = 'INSERT INTO ' . $this->quoteIdentifier($tableName) .
+        $query = 'INSERT INTO ' . $this->quoteIdentifier($table) .
             ' (' . (\count($columnsForInsert) > 0 ? \implode(',', $columnsForInsert) : '') . ') ' .
             'VALUES (' . (\count($columnsForInsert) > 0 ? \implode(',', $placeholdersForInsert) : '') . ') ' .
             'ON DUPLICATE KEY UPDATE ' . $updatePart;
@@ -52,7 +52,7 @@ class DBMySQLImplementation extends DBAbstractImplementation
             );
         }
 
-        $statementResult = $statement->execute();
+        $statementResult = $statement->executeQuery();
         $statementResult->free();
     }
 }

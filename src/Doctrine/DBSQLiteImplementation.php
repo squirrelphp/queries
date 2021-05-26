@@ -19,16 +19,16 @@ class DBSQLiteImplementation extends DBPostgreSQLImplementation
      * @codeCoverageIgnore
      */
     public function insertOrUpdate(
-        string $tableName,
+        string $table,
         array $row = [],
-        array $indexColumns = [],
-        ?array $rowUpdates = null
+        array $index = [],
+        ?array $update = null,
     ): void {
         if ($this->sqliteVersion === null) {
             $connection = $this->getConnection();
 
             $statement = $connection->prepare('select sqlite_version() AS "v"');
-            $statementResult = $statement->execute();
+            $statementResult = $statement->executeQuery();
             $result = $statementResult->fetchAssociative();
             $statementResult->free();
 
@@ -45,9 +45,9 @@ class DBSQLiteImplementation extends DBPostgreSQLImplementation
 
         // SQLite below version 3.24 does not offer native upsert, so emulate it
         if ($this->sqliteVersion < 3.24) {
-            $this->insertOrUpdateEmulation($tableName, $row, $indexColumns, $rowUpdates);
+            $this->insertOrUpdateEmulation($table, $row, $index, $update);
         } else {
-            parent::insertOrUpdate($tableName, $row, $indexColumns, $rowUpdates);
+            parent::insertOrUpdate($table, $row, $index, $update);
         }
     }
 

@@ -19,7 +19,6 @@ use Squirrel\Queries\LargeObject;
  */
 abstract class DBAbstractImplementation implements DBRawInterface
 {
-    private Connection $connection;
     protected DBConvertStructuredQueryToSQL $structuredQueryConverter;
 
     /**
@@ -28,16 +27,16 @@ abstract class DBAbstractImplementation implements DBRawInterface
      */
     private bool $inTransaction = false;
 
-    public function __construct(Connection $connection)
-    {
-        $this->connection = $connection;
+    public function __construct(
+        private Connection $connection,
+    ) {
         $this->structuredQueryConverter = new DBConvertStructuredQueryToSQL(
             [$this, 'quoteIdentifier'],
             [$this, 'quoteExpression'],
         );
     }
 
-    public function transaction(callable $func, ...$arguments)
+    public function transaction(callable $func, mixed ...$arguments): mixed
     {
         // If we are already in a transaction we just run the function
         if ($this->inTransaction === true) {
@@ -66,7 +65,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $this->inTransaction;
     }
 
-    public function select($query, array $vars = []): DBSelectQueryInterface
+    public function select(string|array $query, array $vars = []): DBSelectQueryInterface
     {
         // Convert structured query into a string query with variables
         if (\is_array($query)) {
@@ -75,7 +74,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Prepare and execute query
         $statement = $this->connection->prepare($query);
-        $statementResult = $statement->execute($vars);
+        $statementResult = $statement->executeQuery($vars);
 
         // Return select query object with PDO statement
         return new DBSelectQuery($statementResult);
@@ -114,7 +113,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $selectQuery->getStatement()->free();
     }
 
-    public function fetchOne($query, array $vars = []): ?array
+    public function fetchOne(string|array $query, array $vars = []): ?array
     {
         // Use our internal functions to not repeat ourselves
         $selectQuery = $this->select($query, $vars);
@@ -125,7 +124,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $result;
     }
 
-    public function fetchAll($query, array $vars = []): array
+    public function fetchAll(string|array $query, array $vars = []): array
     {
         // Convert structured query into a string query with variables
         if (\is_array($query)) {
@@ -134,7 +133,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Prepare and execute query
         $statement = $this->connection->prepare($query);
-        $statementResult = $statement->execute($vars);
+        $statementResult = $statement->executeQuery($vars);
 
         // Get result and close result set
         $result = $statementResult->fetchAllAssociative();
@@ -144,15 +143,15 @@ abstract class DBAbstractImplementation implements DBRawInterface
         return $result;
     }
 
-    public function fetchAllAndFlatten($query, array $vars = []): array
+    public function fetchAllAndFlatten(string|array $query, array $vars = []): array
     {
         return $this->flattenResults($this->fetchAll($query, $vars));
     }
 
-    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
+    public function insert(string $table, array $row = [], string $autoIncrement = ''): ?string
     {
         // No table name specified
-        if (\strlen($tableName) === 0) {
+        if (\strlen($table) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -161,7 +160,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Make table name safe by quoting it
-        $tableNameQuoted = $this->quoteIdentifier($tableName);
+        $tableNameQuoted = $this->quoteIdentifier($table);
 
         // Divvy up the field names, values and placeholders
         $columnNames = \array_keys($row);
@@ -187,19 +186,19 @@ abstract class DBAbstractImplementation implements DBRawInterface
                 ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
-        $statementResult = $statement->execute();
+        $statementResult = $statement->executeQuery();
         $statementResult->free();
 
         // No autoincrement index - no insert ID return value needed
-        if (\strlen($autoIncrementIndex) === 0) {
+        if (\strlen($autoIncrement) === 0) {
             return null;
         }
 
         // Return autoincrement ID
-        return $this->connection->lastInsertId($tableName . '_' . $autoIncrementIndex . '_seq');
+        return $this->connection->lastInsertId($table . '_' . $autoIncrement . '_seq');
     }
 
-    public function update(string $tableName, array $changes, array $where = []): int
+    public function update(string $table, array $changes, array $where = []): int
     {
         // Changes in update query need to be defined
         if (\count($changes) === 0) {
@@ -217,17 +216,17 @@ abstract class DBAbstractImplementation implements DBRawInterface
         [$whereSQL, $queryValues] = $this->structuredQueryConverter->buildWhere($where, $queryValues);
 
         // Generate query
-        $sql = 'UPDATE ' . $this->quoteIdentifier($tableName) . ' SET ' . $changeSQL .
+        $sql = 'UPDATE ' . $this->quoteIdentifier($table) . ' SET ' . $changeSQL .
             (\strlen($whereSQL) > 1 ? ' WHERE ' . $whereSQL : '');
 
         // Call the change function to avoid duplication
         return $this->change($sql, $queryValues);
     }
 
-    public function delete(string $tableName, array $where = []): int
+    public function delete(string $table, array $where = []): int
     {
         // No table name specified
-        if (\strlen($tableName) === 0) {
+        if (\strlen($table) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
                 DBInterface::class,
@@ -239,7 +238,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         [$whereSQL, $queryValues] = $this->structuredQueryConverter->buildWhere($where, []);
 
         // Compile the DELETE query
-        $query = 'DELETE FROM ' . $this->quoteIdentifier($tableName) . ' WHERE ' . $whereSQL;
+        $query = 'DELETE FROM ' . $this->quoteIdentifier($table) . ' WHERE ' . $whereSQL;
 
         // Use our existing update function so there is no duplication
         return $this->change($query, $queryValues);
@@ -261,7 +260,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
                 ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
             );
         }
-        $statementResult = $statement->execute();
+        $statementResult = $statement->executeQuery();
 
         // Get affected rows
         $result = $statementResult->rowCount();
@@ -372,7 +371,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         string $tableName,
         array $row = [],
         array $indexColumns = [],
-        ?array $rowUpdates = null
+        ?array $rowUpdates = null,
     ): void {
         $this->validateMandatoryUpsertParameters($tableName, $row, $indexColumns);
 
@@ -383,7 +382,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
             string $tableName,
             array $row,
             array $indexColumns,
-            array $rowUpdates
+            array $rowUpdates,
         ) {
             // Contains all WHERE restrictions for the UPDATE query
             $whereForUpdate = [];
@@ -416,7 +415,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     protected function validateMandatoryUpsertParameters(
         string $tableName,
         array $row,
-        array $indexColumns
+        array $indexColumns,
     ): void {
         // No table name specified
         if (\strlen($tableName) === 0) {
@@ -460,7 +459,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
     protected function prepareUpsertRowUpdates(
         ?array $rowUpdates,
         array $rowInsert,
-        array $indexColumns
+        array $indexColumns,
     ): array {
         // No update fields defined, so we assume the table is changed the same way
         // as with the insert

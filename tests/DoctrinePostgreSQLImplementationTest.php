@@ -67,7 +67,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -112,7 +112,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -175,7 +175,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -267,7 +267,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -345,7 +345,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -408,7 +408,7 @@ class DoctrinePostgreSQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);

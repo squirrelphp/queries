@@ -19,7 +19,7 @@
         }
     ],
     "require": {
-        "php": ">=7.4",
+        "php": ">=8.0",
         "ext-pdo": "*",
         "squirrelphp/debug": "^0.5",
         "doctrine/dbal": "^3.0"
@@ -36,10 +36,7 @@
         "squirrelphp/entities-bundle": "Automatic integration of squirrelphp/entities in Symfony"
     },
     "config": {
-        "sort-packages": false,
-        "platform": {
-            "php": "7.4"
-        }
+        "sort-packages": false
     },
     "autoload": {
         "psr-4": {
@@ -53,15 +50,16 @@
     },
     "scripts": {
         "phpstan": "vendor/bin/phpstan analyse",
+        "phpstan_full": "vendor/bin/phpstan clear-result-cache && vendor/bin/phpstan analyse",
         "phpstan_base": "vendor/bin/phpstan analyse --generate-baseline",
-        "phpstan_clear": "vendor/bin/phpstan clear-result-cache",
-        "psalm": "vendor/bin/psalm --show-info=false --diff",
-        "psalm_full": "vendor/bin/psalm --show-info=false",
+        "psalm": "vendor/bin/psalm --show-info=false",
+        "psalm_full": "vendor/bin/psalm --clear-cache && vendor/bin/psalm --show-info=false",
         "psalm_base": "vendor/bin/psalm --set-baseline=psalm-baseline.xml",
         "phpunit": "vendor/bin/phpunit --colors=always",
         "phpunit_clover": "vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml",
-        "coverage": "vendor/bin/phpunit --coverage-html tests/_reports",
+        "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html tests/_reports",
         "phpcs": "vendor/bin/phpcs --standard=ruleset.xml --extensions=php --cache=.phpcs-cache --colors src tests",
+        "phpcsd": "vendor/bin/phpcs -s --standard=ruleset.xml --extensions=php --cache=.phpcs-cache --colors src tests",
         "phpcsfix": "vendor/bin/phpcbf --standard=ruleset.xml --extensions=php --cache=.phpcs-cache src tests",
         "binupdate": "@composer bin all update --ansi",
         "bininstall": "@composer bin all install --ansi"

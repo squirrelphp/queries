@@ -84,7 +84,7 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -175,7 +175,7 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -252,7 +252,7 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -316,7 +316,7 @@ class DoctrineMySQLImplementationTest extends \PHPUnit\Framework\TestCase
         $this->bindValues($statement, $vars);
 
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);

@@ -144,7 +144,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -218,7 +218,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -262,7 +262,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -320,7 +320,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -363,7 +363,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -442,7 +442,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -488,7 +488,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -536,7 +536,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -589,7 +589,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -624,7 +624,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $insertStatement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($insertStatementResult);
@@ -677,7 +677,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -712,7 +712,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $insertStatement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($insertStatementResult);
@@ -761,7 +761,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -805,7 +805,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -900,7 +900,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -951,7 +951,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -990,7 +990,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1032,7 +1032,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1070,7 +1070,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1126,7 +1126,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1208,7 +1208,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1267,7 +1267,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1326,7 +1326,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1413,7 +1413,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1486,7 +1486,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);
@@ -1540,7 +1540,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);
@@ -1585,7 +1585,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->withNoArgs()
             ->andReturn($statementResult);

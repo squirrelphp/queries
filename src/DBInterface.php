@@ -11,13 +11,9 @@ interface DBInterface
      * Process $func within a transaction. Any additional arguments after
      * $func are passed to $func as arguments
      *
-     * @param callable $func
-     * @param mixed ...$arguments
-     * @return mixed
-     *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function transaction(callable $func, ...$arguments);
+    public function transaction(callable $func, mixed ...$arguments): mixed;
 
     /**
      * Checks if we are currently in a transaction
@@ -34,7 +30,7 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function select($query, array $vars = []): DBSelectQueryInterface;
+    public function select(string|array $query, array $vars = []): DBSelectQueryInterface;
 
     /**
      * Fetch a row from a previously executed select query
@@ -65,7 +61,7 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function fetchOne($query, array $vars = []): ?array;
+    public function fetchOne(string|array $query, array $vars = []): ?array;
 
     /**
      * Fetch all rows with a select query and then clear the result set
@@ -77,7 +73,7 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function fetchAll($query, array $vars = []): array;
+    public function fetchAll(string|array $query, array $vars = []): array;
 
     /**
      * Fetch all rows, flatten the results to a list of values and then clear the result set
@@ -89,22 +85,22 @@ interface DBInterface
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function fetchAllAndFlatten($query, array $vars = []): array;
+    public function fetchAllAndFlatten(string|array $query, array $vars = []): array;
 
     /**
      * Insert a row into a table with the given names and values
      *
-     * @param string $tableName Name of the table
+     * @param string $table Name of the table
      * @param array<string,mixed> $row Name and value pairs to insert into the table
-     * @param string $autoIncrementIndex Index of an automatically generated value that should be returned
+     * @param string $autoIncrement Index of an automatically generated value that should be returned
      * @return string|null If $autoIncrementIndex is empty, return null, otherwise return the auto increment value
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
     public function insert(
-        string $tableName,
+        string $table,
         array $row = [],
-        string $autoIncrementIndex = ''
+        string $autoIncrement = '',
     ): ?string;
 
     /**
@@ -117,24 +113,24 @@ interface DBInterface
      * Postgres & SQLite: INSERT INTO ... ON CONFLICT(column_names) DO UPDATE ... WHERE ...
      * Others/ANSI: MERGE (see https://en.wikipedia.org/wiki/Merge_(SQL))
      *
-     * @param string $tableName Name of the table
+     * @param string $table Name of the table
      * @param array<string,mixed> $row Row to insert, keys are column names, values are the data
-     * @param string[] $indexColumns Index columns which encompass the unique index
-     * @param array<int|string,mixed>|null $rowUpdates Fields to update if entry already exists, default is all non-index field entries
+     * @param string[] $index Index columns which encompass the unique index
+     * @param array<int|string,mixed>|null $update Fields to update if entry already exists, default is all non-index field entries
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
     public function insertOrUpdate(
-        string $tableName,
+        string $table,
         array $row = [],
-        array $indexColumns = [],
-        ?array $rowUpdates = null
+        array $index = [],
+        ?array $update = null,
     ): void;
 
     /**
      * Execute an update query and return number of affected rows
      *
-     * @param string $tableName Name of the table
+     * @param string $table Name of the table
      * @param array<int|string,mixed> $changes List of changes, the SET clauses
      * @param array<int|string,mixed> $where Restrictions on which rows to update
      * @return int Number of affected rows
@@ -142,21 +138,21 @@ interface DBInterface
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
     public function update(
-        string $tableName,
+        string $table,
         array $changes,
-        array $where = []
+        array $where = [],
     ): int;
 
     /**
      * Execute a delete query and return number of affected rows
      *
-     * @param string $tableName Name of the table
+     * @param string $table Name of the table
      * @param array<int|string,mixed> $where Restrictions for the row deletion
      * @return int Number of affected rows
      *
      * @throws DBException Common minimal exception thrown if anything goes wrong
      */
-    public function delete(string $tableName, array $where = []): int;
+    public function delete(string $table, array $where = []): int;
 
     /**
      * Execute an insert, update or delete query and return number of affected rows

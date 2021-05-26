@@ -176,7 +176,7 @@ class DBConvertStructuredQueryToSQL
             }
 
             // No expressions allowed in name part!
-            if (!\is_int($name) && \strpos($name, ':') !== false) {
+            if (!\is_int($name) && \str_contains($name, ':')) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
                     DBInterface::class,
@@ -189,13 +189,13 @@ class DBConvertStructuredQueryToSQL
             $isExpression = false;
 
             if (
-                \strpos($field, ':') !== false
-                || \strpos($field, ' ') !== false
-                || \strpos($field, '(') !== false
-                || \strpos($field, ')') !== false
-                || \strpos($field, '*') !== false
+                \str_contains($field, ':')
+                || \str_contains($field, ' ')
+                || \str_contains($field, '(')
+                || \str_contains($field, ')')
+                || \str_contains($field, '*')
             ) { // Special characters found, so this is an expression
-                $fieldProcessed = (\strpos($field, ':') !== false ? ($this->quoteExpression)($field) : $field);
+                $fieldProcessed = (\str_contains($field, ':') ? ($this->quoteExpression)($field) : $field);
 
                 // This is now a special expression
                 $isExpression = true;
@@ -248,7 +248,7 @@ class DBConvertStructuredQueryToSQL
             }
 
             // No variable expression with colons
-            if (\strpos($expression, ':') === false) {
+            if (\str_contains($expression, ':') === false) {
                 // Count number of spaces in expression
                 $spacesNumber = \substr_count($expression, ' ');
 
@@ -298,7 +298,7 @@ class DBConvertStructuredQueryToSQL
             }
 
             // No assignment operator, meaning we have a fieldName => value entry
-            if (\strpos($expression, '=') === false) {
+            if (\str_contains($expression, '=') === false) {
                 // No value was given, we just have a field name without new value
                 if (\is_array($values) && \count($values) === 0) {
                     throw Debug::createException(
@@ -310,7 +310,7 @@ class DBConvertStructuredQueryToSQL
                 }
 
                 // Colons are not allowed in a variable name
-                if (\strpos($expression, ':') !== false) {
+                if (\str_contains($expression, ':')) {
                     throw Debug::createException(
                         DBInvalidOptionException::class,
                         DBInterface::class,
@@ -323,7 +323,7 @@ class DBConvertStructuredQueryToSQL
                 $expression = ($this->quoteIdentifier)($expression) . '=?';
             } else { // Assignment operator exists in expression
                 // Process variables if any exist in the string
-                if (\strpos($expression, ':') !== false) {
+                if (\str_contains($expression, ':')) {
                     $expression = ($this->quoteExpression)($expression);
                 }
             }
@@ -390,15 +390,15 @@ class DBConvertStructuredQueryToSQL
 
             // Check if this is a custom expression, not just a field name to value expression
             if (
-                \strpos($expression, ' ') !== false
-                || \strpos($expression, '=') !== false
-                || \strpos($expression, '<') !== false
-                || \strpos($expression, '>') !== false
-                || \strpos($expression, '(') !== false
-                || \strpos($expression, ')') !== false
+                \str_contains($expression, ' ')
+                || \str_contains($expression, '=')
+                || \str_contains($expression, '<')
+                || \str_contains($expression, '>')
+                || \str_contains($expression, '(')
+                || \str_contains($expression, ')')
             ) {
                 // Colons found, which are used to escape variables
-                if (\strpos($expression, ':') !== false) {
+                if (\str_contains($expression, ':')) {
                     $expression = ($this->quoteExpression)($expression);
                 }
 
@@ -507,14 +507,14 @@ class DBConvertStructuredQueryToSQL
             }
 
             // Wether variable was found or not
-            $variableFound = (\strpos($expression, ':') !== false);
+            $variableFound = \str_contains($expression, ':');
 
             // Expression contains not just the field name
             if (
                 $variableFound === true
-                || \strpos($expression, ' ') !== false
-                || \strpos($expression, '(') !== false
-                || \strpos($expression, ')') !== false
+                || \str_contains($expression, ' ')
+                || \str_contains($expression, '(')
+                || \str_contains($expression, ')')
             ) {
                 if ($variableFound === true) {
                     $expression = ($this->quoteExpression)($expression);
@@ -531,10 +531,8 @@ class DBConvertStructuredQueryToSQL
 
     /**
      * Add query variables to existing values - but NULL is not allowed as a value
-     *
-     * @param mixed $newValues
      */
-    private function addQueryVariablesNoNull(array $existingValues, $newValues): array
+    private function addQueryVariablesNoNull(array $existingValues, mixed $newValues): array
     {
         // Convert to array of values if not already done
         if (!\is_array($newValues)) {
@@ -543,7 +541,7 @@ class DBConvertStructuredQueryToSQL
 
         // Add all the values to the query values
         foreach ($newValues as $value) {
-            // Only scalar values and NULL are allowed
+            // Only scalar values are allowed
             if (!\is_scalar($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,

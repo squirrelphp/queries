@@ -9,8 +9,6 @@ use Squirrel\Queries\DBInterface;
  */
 class CountEntries implements BuilderInterface
 {
-    private DBInterface $db;
-
     /**
      * @var array<int|string,mixed> Explicit connections between the repositories
      */
@@ -26,9 +24,9 @@ class CountEntries implements BuilderInterface
      */
     private bool $blocking = false;
 
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function inTable(string $table): self

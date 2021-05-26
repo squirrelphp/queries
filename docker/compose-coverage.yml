@@ -17,6 +17,7 @@ services:
             # We currently use PCOV because it is at least 8x faster
             # - 3 seconds compared to 23 seconds (or 5 minutes with path coverage enabled)
             PHP_EXTENSION_XDEBUG: 1
+            XDEBUG_MODE: coverage
             #PHP_EXTENSION_PCOV: 1
             PHP_EXTENSION_APCU: 0
             PHP_EXTENSION_REDIS: 0

@@ -9,7 +9,6 @@ use Squirrel\Queries\DBInterface;
  */
 class InsertOrUpdateEntry implements BuilderInterface
 {
-    private DBInterface $db;
     private string $table = '';
 
     /**
@@ -27,9 +26,9 @@ class InsertOrUpdateEntry implements BuilderInterface
      */
     private ?array $valuesOnUpdate = null;
 
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function inTable(string $table): self
@@ -50,7 +49,7 @@ class InsertOrUpdateEntry implements BuilderInterface
     /**
      * @param string[]|string $indexFields
      */
-    public function index($indexFields): self
+    public function index(array|string $indexFields): self
     {
         if (\is_string($indexFields)) {
             $indexFields = [$indexFields];
@@ -63,7 +62,7 @@ class InsertOrUpdateEntry implements BuilderInterface
     /**
      * @param array<int|string,mixed>|string|null $values
      */
-    public function setOnUpdate($values): self
+    public function setOnUpdate(array|string|null $values): self
     {
         if (\is_string($values)) {
             $values = [$values];

@@ -106,7 +106,7 @@ class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
 
         // "Execute" call on doctrine result statement
         $statement
-            ->shouldReceive('execute')
+            ->shouldReceive('executeQuery')
             ->once()
             ->with(\Mockery::mustBe($vars))
             ->andReturn($statementResult);

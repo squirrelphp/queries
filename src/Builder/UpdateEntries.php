@@ -11,7 +11,6 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
  */
 class UpdateEntries implements BuilderInterface
 {
-    private DBInterface $db;
     private string $table = '';
 
     /**
@@ -29,9 +28,9 @@ class UpdateEntries implements BuilderInterface
      */
     private bool $confirmNoWhere = false;
 
-    public function __construct(DBInterface $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private DBInterface $db,
+    ) {
     }
 
     public function inTable(string $table): self

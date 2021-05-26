@@ -105,7 +105,7 @@ class DBErrorHandler implements DBRawInterface
         $this->lockRetries = \array_map('intval', $lockRetries);
     }
 
-    public function transaction(callable $func, ...$arguments)
+    public function transaction(callable $func, mixed ...$arguments): mixed
     {
         // If we are already in a transaction we just run the function
         if ($this->lowerLayer->inTransaction() === true) {
@@ -124,16 +124,14 @@ class DBErrorHandler implements DBRawInterface
     /**
      * Execute transaction - attempts to do it and repeats it if there was a problem
      *
-     * @return mixed
-     *
      * @throws DBException
      */
     protected function transactionExecute(
         callable $func,
         array $arguments,
         array $connectionRetries,
-        array $lockRetries
-    ) {
+        array $lockRetries,
+    ): mixed {
         try {
             return $this->lowerLayer->transaction($func, ...$arguments);
         } catch (DeadlockException | LockWaitTimeoutException $e) { // Deadlock or lock timeout occured
@@ -264,22 +262,22 @@ class DBErrorHandler implements DBRawInterface
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    public function insert(string $tableName, array $row = [], string $autoIncrementIndex = ''): ?string
+    public function insert(string $table, array $row = [], string $autoIncrement = ''): ?string
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    public function insertOrUpdate(string $tableName, array $row = [], array $indexColumns = [], ?array $rowUpdates = null): void
+    public function insertOrUpdate(string $table, array $row = [], array $index = [], ?array $update = null): void
     {
         $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    public function update(string $tableName, array $changes, array $where = []): int
+    public function update(string $table, array $changes, array $where = []): int
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
 
-    public function delete(string $tableName, array $where = []): int
+    public function delete(string $table, array $where = []): int
     {
         return $this->internalCall(__FUNCTION__, \func_get_args(), $this->connectionRetries, $this->lockRetries);
     }
@@ -293,16 +291,14 @@ class DBErrorHandler implements DBRawInterface
      * Pass through all calls to lower layer, and just add try-catch blocks so we can
      * catch and process connection and (dead)lock exceptions / repeat queries
      *
-     * @return mixed
-     *
      * @throws DBException
      */
     protected function internalCall(
         string $name,
         array $arguments,
         array $connectionRetries,
-        array $lockRetries
-    ) {
+        array $lockRetries,
+    ): mixed {
         // Attempt to call the dbal function
         try {
             return $this->lowerLayer->$name(...$arguments);
