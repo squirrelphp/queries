@@ -6,19 +6,15 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
+use Hamcrest\Core\IsEqual;
+use Mockery\MockInterface;
 use Squirrel\Queries\Doctrine\DBSQLiteImplementation;
 
 class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBSQLiteImplementation
-     */
-    private $db;
-
-    /**
-     * @var Connection
-     */
-    private $connection;
+    private DBSQLiteImplementation $db;
+    /** @var Connection&MockInterface */
+    private Connection $connection;
 
     /**
      * Prepare common aspects of all tests
@@ -33,7 +29,7 @@ class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db = new DBSQLiteImplementation($this->connection);
     }
 
-    private function bindValues($statement, $vars)
+    private function bindValues(MockInterface $statement, array $vars): void
     {
         $varCounter = 1;
 
@@ -41,11 +37,11 @@ class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
             $statement
                 ->shouldReceive('bindValue')
                 ->once()
-                ->with(\Mockery::mustBe($varCounter++), \Mockery::mustBe($var), \PDO::PARAM_STR);
+                ->with(IsEqual::equalTo($varCounter++), IsEqual::equalTo($var), \PDO::PARAM_STR);
         }
     }
 
-    public function testFetchOneStructured2()
+    public function testFetchOneStructured2(): void
     {
         // Query parameters
         $query = 'SELECT "c"."cart_id","c"."checkout_step","s"."session_id","s"."user_id","s"."domain" ' .
@@ -101,14 +97,14 @@ class DoctrineSQLiteImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch

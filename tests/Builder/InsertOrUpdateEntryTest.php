@@ -2,22 +2,21 @@
 
 namespace Squirrel\Queries\Tests\Builder;
 
+use Mockery\MockInterface;
 use Squirrel\Queries\Builder\InsertOrUpdateEntry;
 use Squirrel\Queries\DBInterface;
 
 class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    /** @var DBInterface&MockInterface */
+    private DBInterface $db;
 
     protected function setUp(): void
     {
         $this->db = \Mockery::mock(DBInterface::class);
     }
 
-    public function testNoDataInsert()
+    public function testNoDataInsert(): void
     {
         $insertBuilder = new InsertOrUpdateEntry($this->db);
 
@@ -33,7 +32,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testInsert()
+    public function testInsert(): void
     {
         $insertBuilder = new InsertOrUpdateEntry($this->db);
 
@@ -68,7 +67,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testInsertWithReturn()
+    public function testInsertWithReturn(): void
     {
         $insertBuilder = new InsertOrUpdateEntry($this->db);
 
@@ -103,7 +102,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testUpdateWithReturn()
+    public function testUpdateWithReturn(): void
     {
         $insertBuilder = new InsertOrUpdateEntry($this->db);
 
@@ -134,7 +133,7 @@ class InsertOrUpdateEntryTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testNoChangeWithReturn()
+    public function testNoChangeWithReturn(): void
     {
         $insertBuilder = new InsertOrUpdateEntry($this->db);
 

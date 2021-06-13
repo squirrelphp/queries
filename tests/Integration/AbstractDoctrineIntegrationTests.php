@@ -45,7 +45,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         self::$db->change($this->createAccountTableQuery());
     }
 
-    public function testInsert()
+    public function testInsert(): void
     {
         if (self::$db === null) {
             return;
@@ -74,6 +74,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($insertedData === null) {
+            throw new \LogicException('Inserted row not found');
+        }
+
         $accountData['picture'] = \hex2bin(\md5('dadaism'));
         $accountData['phone'] = null;
         $accountData['user_id'] = $userId;
@@ -91,7 +95,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals($accountData, $insertedData);
     }
 
-    public function testInsertOrUpdateWithUpdate()
+    public function testInsertOrUpdateWithUpdate(): void
     {
         if (self::$db === null) {
             return;
@@ -131,6 +135,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($insertedData === null) {
+            throw new \LogicException('Inserted row not found');
+        }
+
         $accountData['phone'] = null;
         $insertedData['user_id'] = \intval($insertedData['user_id']);
 
@@ -146,7 +154,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals($accountData, $insertedData);
     }
 
-    public function testInsertOrUpdateWithInsert()
+    public function testInsertOrUpdateWithInsert(): void
     {
         if (self::$db === null) {
             return;
@@ -186,6 +194,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($insertedData === null) {
+            throw new \LogicException('Inserted row not found');
+        }
+
         $accountData['phone'] = null;
         $accountData['user_id'] = \intval($accountData['user_id']);
         $insertedData['user_id'] = \intval($insertedData['user_id']);
@@ -202,7 +214,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals($accountData, $insertedData);
     }
 
-    public function testInsertOrUpdateNoUpdate()
+    public function testInsertOrUpdateNoUpdate(): void
     {
         if (self::$db === null) {
             return;
@@ -232,10 +244,14 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($insertedData === null) {
+            throw new \LogicException('Inserted row not found');
+        }
+
         $this->assertEquals(800, \intval($insertedData['balance']));
     }
 
-    public function testUpdate()
+    public function testUpdate(): void
     {
         if (self::$db === null) {
             return;
@@ -267,6 +283,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($insertedData === null) {
+            throw new \LogicException('Inserted row not found');
+        }
+
         $accountData['picture'] = \hex2bin(\md5('dadaism'));
         $accountData['phone'] = null;
         $accountData['user_id'] = 2;
@@ -291,7 +311,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals(1, $rowsAffected);
     }
 
-    public function testCount()
+    public function testCount(): void
     {
         if (self::$db === null) {
             return;
@@ -303,6 +323,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
                 'num' => 'COUNT(*)',
             ],
         ]);
+
+        if ($rowData === null) {
+            throw new \LogicException('Expected row did not exist');
+        }
 
         $rowData['num'] = \intval($rowData['num']);
 
@@ -317,12 +341,16 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($rowData === null) {
+            throw new \LogicException('Expected row did not exist');
+        }
+
         $rowData['num'] = \intval($rowData['num']);
 
         $this->assertEquals(['num' => 2], $rowData);
     }
 
-    public function testSelect()
+    public function testSelect(): void
     {
         if (self::$db === null) {
             return;
@@ -357,6 +385,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($rowData === null) {
+            throw new \LogicException('Expected row did not exist');
+        }
+
         $rowData['user_id'] = \intval($rowData['user_id']);
         $rowData['active'] = \boolval($rowData['active']);
         $rowData['create_date'] = \intval($rowData['create_date']);
@@ -365,7 +397,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals($accountData, $rowData);
     }
 
-    public function testSelectFlattened()
+    public function testSelectFlattened(): void
     {
         if (self::$db === null) {
             return;
@@ -388,7 +420,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals(['Mary', 'John'], $flattenedResults);
     }
 
-    public function testSelectFieldsWithAlias()
+    public function testSelectFieldsWithAlias(): void
     {
         if (self::$db === null) {
             return;
@@ -414,13 +446,17 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($rowData === null) {
+            throw new \LogicException('Expected row did not exist');
+        }
+
         $rowData['id'] = \intval($rowData['id']);
         $rowData['active'] = \boolval($rowData['active']);
 
         $this->assertEquals($accountData, $rowData);
     }
 
-    public function testSelectWithGroupByOrderBy()
+    public function testSelectWithGroupByOrderBy(): void
     {
         if (self::$db === null) {
             return;
@@ -560,6 +596,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             ],
         ]);
 
+        if ($rowsData === null) {
+            throw new \LogicException('Expected row did not exist');
+        }
+
         $this->assertEquals([
             'username' => 'Mary',
             'number' => 1,
@@ -574,7 +614,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals(4, \count($rowsData));
     }
 
-    public function testTransactionSelectAndUpdate()
+    public function testTransactionSelectAndUpdate(): void
     {
         if (self::$db === null) {
             return;
@@ -607,6 +647,10 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
                 'lock' => true,
             ]);
 
+            if ($rowData === null) {
+                throw new \LogicException('Expected row did not exist');
+            }
+
             $rowData['id'] = \intval($rowData['id']);
             $rowData['active'] = \boolval($rowData['active']);
 
@@ -620,7 +664,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         });
     }
 
-    public function testDelete()
+    public function testDelete(): void
     {
         if (self::$db === null) {
             return;
@@ -646,7 +690,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $this->assertEquals(0, $rowsAffected);
     }
 
-    private function initializeDataWithDefaultTwoEntries()
+    private function initializeDataWithDefaultTwoEntries(): void
     {
         self::$db->insert('account', [
             'username' => 'Mary',

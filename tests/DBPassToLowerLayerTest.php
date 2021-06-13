@@ -2,24 +2,22 @@
 
 namespace Squirrel\Queries\Tests;
 
+use Hamcrest\Core\IsEqual;
+use Mockery\MockInterface;
 use Squirrel\Queries\DBPassToLowerLayerTrait;
 use Squirrel\Queries\DBRawInterface;
-use Squirrel\Queries\TestHelpers\DBSelectQueryForTests;
+use Squirrel\Queries\DBSelectQueryInterface;
 
 /**
  * Make sure all function calls are passed to the lower layer with the trait, by default
  */
 class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBRawInterface
-     */
-    private $dbRawObject;
-
-    /**
-     * @var DBPassToLowerLayerTrait
-     */
+    /** @var DBRawInterface&MockInterface  */
+    private DBRawInterface $dbRawObject;
+    /** @var DBRawInterface&MockInterface */
     private $dbLowerLayerObject;
+    private DBSelectQueryInterface $dbSelectQuery;
 
     /**
      * Initialize for every test in this class
@@ -32,12 +30,15 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // Lower layer mock, where we check the function calls
         $this->dbLowerLayerObject = \Mockery::mock(DBPassToLowerLayerTrait::class)->makePartial();
         $this->dbLowerLayerObject->setLowerLayer($this->dbRawObject);
+
+        $this->dbSelectQuery = new class implements DBSelectQueryInterface {
+        };
     }
 
-    public function testTransaction()
+    public function testTransaction(): void
     {
         // Variables to pass to the function
-        $func = function ($a, $b, $c) {
+        $func = function (int $a, int $b, int $c): int {
             return $a + $b + $c;
         };
         $a = 3;
@@ -47,7 +48,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('transaction')
-            ->with(\Mockery::mustBe($func), \Mockery::mustBe($a), \Mockery::mustBe($b), \Mockery::mustBe($c))
+            ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andReturn(120);
 
         // Make the trait function call
@@ -57,7 +58,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(120, $return);
     }
 
-    public function testInTransaction()
+    public function testInTransaction(): void
     {
         // What we expect to be called with the lower layer
         $this->dbRawObject
@@ -71,67 +72,58 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(true, $return);
     }
 
-    public function testSelect()
+    public function testSelect(): void
     {
         // Variables to pass to the function
         $query = 'SELECT';
         $vars = [0, 3, 9];
 
-        // Select query result
-        $select = new DBSelectQueryForTests();
-
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('select')
-            ->with(\Mockery::mustBe($query), \Mockery::mustBe($vars))
-            ->andReturn($select);
+            ->with(IsEqual::equalTo($query), IsEqual::equalTo($vars))
+            ->andReturn($this->dbSelectQuery);
 
         // Make the trait function call
         $return = $this->dbLowerLayerObject->select($query, $vars);
 
         // Check the result
-        $this->assertSame($select, $return);
+        $this->assertSame($this->dbSelectQuery, $return);
     }
 
-    public function testFetch()
+    public function testFetch(): void
     {
-        // Select query result
-        $select = new DBSelectQueryForTests();
-
         // Expected return value
         $expected = ['dada' => 5];
 
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('fetch')
-            ->with(\Mockery::mustBe($select))
+            ->with(IsEqual::equalTo($this->dbSelectQuery))
             ->andReturn($expected);
 
         // Make the trait function call
-        $return = $this->dbLowerLayerObject->fetch($select);
+        $return = $this->dbLowerLayerObject->fetch($this->dbSelectQuery);
 
         // Check the result
         $this->assertSame($expected, $return);
     }
 
-    public function testClear()
+    public function testClear(): void
     {
-        // Select query result
-        $select = new DBSelectQueryForTests();
-
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('clear')
-            ->with(\Mockery::mustBe($select));
+            ->with(IsEqual::equalTo($this->dbSelectQuery));
 
         // Make the trait function call
-        $this->dbLowerLayerObject->clear($select);
+        $this->dbLowerLayerObject->clear($this->dbSelectQuery);
 
         // Check the result
         $this->assertTrue(true);
     }
 
-    public function testFetchOne()
+    public function testFetchOne(): void
     {
         // Variables to pass to the function
         $query = 'SELECT';
@@ -143,7 +135,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('fetchOne')
-            ->with(\Mockery::mustBe($query), \Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($query), IsEqual::equalTo($vars))
             ->andReturn($expected);
 
         // Make the trait function call
@@ -153,7 +145,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $return);
     }
 
-    public function testFetchAll()
+    public function testFetchAll(): void
     {
         // Variables to pass to the function
         $query = 'SELECT';
@@ -165,7 +157,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('fetchAll')
-            ->with(\Mockery::mustBe($query), \Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($query), IsEqual::equalTo($vars))
             ->andReturn($expected);
 
         // Make the trait function call
@@ -175,7 +167,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $return);
     }
 
-    public function testFetchAllAndFlatten()
+    public function testFetchAllAndFlatten(): void
     {
         // Variables to pass to the function
         $query = 'SELECT';
@@ -187,7 +179,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('fetchAllAndFlatten')
-            ->with(\Mockery::mustBe($query), \Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($query), IsEqual::equalTo($vars))
             ->andReturn($expected);
 
         // Make the trait function call
@@ -197,7 +189,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $return);
     }
 
-    public function testInsert()
+    public function testInsert(): void
     {
         // Variables to pass to the function
         $tableName = 'users';
@@ -210,7 +202,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('insert')
-            ->with(\Mockery::mustBe($tableName), \Mockery::mustBe($row), '');
+            ->with(IsEqual::equalTo($tableName), IsEqual::equalTo($row), '');
 
         // Make the trait function call
         $this->dbLowerLayerObject->insert($tableName, $row);
@@ -218,7 +210,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testUpsert()
+    public function testUpsert(): void
     {
         // Variables to pass to the function
         $tableName = 'users';
@@ -238,10 +230,10 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->dbRawObject
             ->shouldReceive('insertOrUpdate')
             ->with(
-                \Mockery::mustBe($tableName),
-                \Mockery::mustBe($row),
-                \Mockery::mustBe($indexColumns),
-                \Mockery::mustBe($rowUpdates),
+                IsEqual::equalTo($tableName),
+                IsEqual::equalTo($row),
+                IsEqual::equalTo($indexColumns),
+                IsEqual::equalTo($rowUpdates),
             );
 
         // Make the trait function call
@@ -250,7 +242,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testUpdate()
+    public function testUpdate(): void
     {
         // What we expect to be called with the lower layer
         $this->dbRawObject
@@ -265,7 +257,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(7, $return);
     }
 
-    public function testDelete()
+    public function testDelete(): void
     {
         // Variables to pass to the function
         $tableName = 'dadaism';
@@ -276,7 +268,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('delete')
-            ->with(\Mockery::mustBe($tableName), \Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($tableName), IsEqual::equalTo($query))
             ->andReturn(7);
 
         // Make the trait function call
@@ -286,7 +278,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(7, $return);
     }
 
-    public function testLastInsertId()
+    public function testLastInsertId(): void
     {
         // Variables to pass to the function
         $tableName = 'users';
@@ -299,7 +291,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('insert')
-            ->with(\Mockery::mustBe($tableName), \Mockery::mustBe($row), 'userId')
+            ->with(IsEqual::equalTo($tableName), IsEqual::equalTo($row), 'userId')
             ->andReturn(7);
 
         // Make the trait function call
@@ -309,7 +301,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('7', $return);
     }
 
-    public function testChange()
+    public function testChange(): void
     {
         // Variables to pass to the function
         $query = 'SELECT';
@@ -318,7 +310,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('change')
-            ->with(\Mockery::mustBe($query), \Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($query), IsEqual::equalTo($vars))
             ->andReturn(7);
 
         // Make the trait function call
@@ -328,12 +320,12 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(7, $return);
     }
 
-    public function testQuoteIdentifier()
+    public function testQuoteIdentifier(): void
     {
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('quoteIdentifier')
-            ->with(\Mockery::mustBe('dada'))
+            ->with(IsEqual::equalTo('dada'))
             ->andReturn('"dada"');
 
         // Make the trait function call
@@ -343,12 +335,12 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('"dada"', $return);
     }
 
-    public function testQuoteExpression()
+    public function testQuoteExpression(): void
     {
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('quoteExpression')
-            ->with(\Mockery::mustBe('WHERE :dada:'))
+            ->with(IsEqual::equalTo('WHERE :dada:'))
             ->andReturn('WHERE "dada"');
 
         // Make the trait function call
@@ -358,12 +350,12 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('WHERE "dada"', $return);
     }
 
-    public function testChangeTransaction()
+    public function testChangeTransaction(): void
     {
         // What we expect to be called with the lower layer
         $this->dbRawObject
             ->shouldReceive('setTransaction')
-            ->with(\Mockery::mustBe(true));
+            ->with(IsEqual::equalTo(true));
 
         // Make the trait function call
         $this->dbLowerLayerObject->setTransaction(true);
@@ -372,7 +364,7 @@ class DBPassToLowerLayerTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testGetConnection()
+    public function testGetConnection(): void
     {
         // Connection dummy class
         $connection = new \stdClass();

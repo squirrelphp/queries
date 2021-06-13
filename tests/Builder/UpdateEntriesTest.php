@@ -2,23 +2,22 @@
 
 namespace Squirrel\Queries\Tests\Builder;
 
+use Mockery\MockInterface;
 use Squirrel\Queries\Builder\UpdateEntries;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    /** @var DBInterface&MockInterface */
+    private DBInterface $db;
 
     protected function setUp(): void
     {
         $this->db = \Mockery::mock(DBInterface::class);
     }
 
-    public function testNoDataGetEntries()
+    public function testNoDataGetEntries(): void
     {
         $updateBuilder = new UpdateEntries($this->db);
 
@@ -37,7 +36,7 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testNoDataGetEntriesWithAffected()
+    public function testNoDataGetEntriesWithAffected(): void
     {
         $updateBuilder = new UpdateEntries($this->db);
 
@@ -56,7 +55,7 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testGetEntries()
+    public function testGetEntries(): void
     {
         $updateBuilder = new UpdateEntries($this->db);
 
@@ -89,7 +88,7 @@ class UpdateEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testNoWhereNoConfirmation()
+    public function testNoWhereNoConfirmation(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 

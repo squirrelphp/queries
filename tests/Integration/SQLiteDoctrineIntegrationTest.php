@@ -43,7 +43,7 @@ class SQLiteDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                 );';
     }
 
-    public function testInsertNoLargeObject()
+    public function testInsertNoLargeObject(): void
     {
         if (self::$db === null) {
             return;
@@ -69,6 +69,10 @@ class SQLiteDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                 'user_id' => $userId,
             ],
         ]);
+
+        if ($insertedData === null) {
+            throw new \LogicException('Inserted row not found');
+        }
 
         $accountData['picture'] = \hex2bin(\md5('dadaism'));
         $accountData['phone'] = null;

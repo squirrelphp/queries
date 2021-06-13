@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="4.3.1@2feba22a005a18bf31d4c7b9bdb9252c73897476">
+<files psalm-version="4.7.3@38c452ae584467e939d55377aaf83b5a26f19dd1">
   <file src="src/Builder/FlattenedFieldsWithTypeTrait.php">
     <InvalidReturnType occurrences="4">
       <code>bool[]</code>
@@ -22,5 +22,32 @@
     <PossiblyNullArgument occurrences="1">
       <code>$select['offset'] ?? null</code>
     </PossiblyNullArgument>
+  </file>
+  <file src="tests/DBPassToLowerLayerTest.php">
+    <InvalidPropertyAssignmentValue occurrences="1">
+      <code>\Mockery::mock(DBPassToLowerLayerTrait::class)-&gt;makePartial()</code>
+    </InvalidPropertyAssignmentValue>
+    <UndefinedClass occurrences="2">
+      <code>$this-&gt;dbLowerLayerObject</code>
+      <code>\Mockery::mock(DBPassToLowerLayerTrait::class)</code>
+    </UndefinedClass>
+    <UndefinedInterfaceMethod occurrences="1">
+      <code>setLowerLayer</code>
+    </UndefinedInterfaceMethod>
+  </file>
+  <file src="tests/Integration/AbstractDoctrineIntegrationTests.php">
+    <InvalidScalarArgument occurrences="2">
+      <code>$accountData['balance']</code>
+      <code>$accountData['balance']</code>
+    </InvalidScalarArgument>
+    <PossiblyNullReference occurrences="2">
+      <code>fetchOne</code>
+      <code>insert</code>
+    </PossiblyNullReference>
+  </file>
+  <file src="tests/LargeObjectTest.php">
+    <RedundantConditionGivenDocblockType occurrences="1">
+      <code>\is_resource($obj-&gt;getStream())</code>
+    </RedundantConditionGivenDocblockType>
   </file>
 </files>

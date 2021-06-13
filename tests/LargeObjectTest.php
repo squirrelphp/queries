@@ -6,7 +6,7 @@ use Squirrel\Queries\LargeObject;
 
 class LargeObjectTest extends \PHPUnit\Framework\TestCase
 {
-    public function testObject()
+    public function testObject(): void
     {
         $obj = new LargeObject('some string');
 

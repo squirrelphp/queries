@@ -6,6 +6,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
+use Hamcrest\Core\IsEqual;
+use Mockery\MockInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
 use Squirrel\Queries\Doctrine\DBAbstractImplementation;
 use Squirrel\Queries\Doctrine\DBSelectQuery;
@@ -16,15 +18,10 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
  */
 class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBAbstractImplementation
-     */
-    private $db;
-
-    /**
-     * @var Connection
-     */
-    private $connection;
+    /** @var DBAbstractImplementation&MockInterface */
+    private DBAbstractImplementation $db;
+    /** @var Connection&MockInterface */
+    private Connection $connection;
 
     /**
      * Prepare common aspects of all tests
@@ -41,7 +38,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         // Make sure quoteIdentifier works as expected
         $this->connection
             ->shouldReceive('quoteIdentifier')
-            ->andReturnUsing(function ($identifier) {
+            ->andReturnUsing(function (string $identifier): string {
                 if (strpos($identifier, ".") !== false) {
                     $parts = array_map(
                         function ($p) {
@@ -60,7 +57,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     /**
      * Check that we correctly return the connection object
      */
-    public function testConnection()
+    public function testConnection(): void
     {
         $this->assertSame($this->connection, $this->db->getConnection());
     }
@@ -68,7 +65,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     /**
      * Check correct return values for transaction bool
      */
-    public function testInTransaction()
+    public function testInTransaction(): void
     {
         $this->assertSame(false, $this->db->inTransaction());
         $this->db->setTransaction(true);
@@ -77,7 +74,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(false, $this->db->inTransaction());
     }
 
-    public function testTransaction()
+    public function testTransaction(): void
     {
         // Make sure no transaction is running at the beginning
         $this->assertSame(false, $this->db->inTransaction());
@@ -106,7 +103,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(false, $this->db->inTransaction());
     }
 
-    public function testTransactionWithinTransaction()
+    public function testTransactionWithinTransaction(): void
     {
         // Set transaction to "yes"
         $this->db->setTransaction(true);
@@ -125,7 +122,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(true, $this->db->inTransaction());
     }
 
-    public function testSelect()
+    public function testSelect(): void
     {
         // Query parameters
         $query = 'SELECT blabla FROM yudihui';
@@ -139,14 +136,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select($query, $vars);
@@ -155,7 +152,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
-    public function testFetch()
+    public function testFetch(): void
     {
         // Doctrine result
         $statementResult = \Mockery::mock(Result::class);
@@ -179,7 +176,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
-    public function testClear()
+    public function testClear(): void
     {
         // Doctrine result
         $statementResult = \Mockery::mock(Result::class);
@@ -199,7 +196,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testFetchOne()
+    public function testFetchOne(): void
     {
         // Query parameters
         $query = 'SELECT blabla FROM yudihui';
@@ -213,14 +210,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -243,7 +240,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
-    public function testFetchAll()
+    public function testFetchAll(): void
     {
         // Query parameters
         $query = 'SELECT blabla FROM yudihui';
@@ -257,14 +254,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -287,7 +284,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
-    private function bindValues($statement, $vars)
+    private function bindValues(MockInterface $statement, array $vars): void
     {
         $varCounter = 1;
 
@@ -295,11 +292,11 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             $statement
                 ->shouldReceive('bindValue')
                 ->once()
-                ->with(\Mockery::mustBe($varCounter++), \Mockery::mustBe($var), \PDO::PARAM_STR);
+                ->with(IsEqual::equalTo($varCounter++), IsEqual::equalTo($var), \PDO::PARAM_STR);
         }
     }
 
-    public function testInsert()
+    public function testInsert(): void
     {
         // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
@@ -313,7 +310,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -342,7 +339,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testLastInsertId()
+    public function testLastInsertId(): void
     {
         // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (?,?,?)';
@@ -356,7 +353,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -376,7 +373,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('lastInsertId')
             ->once()
-            ->with(\Mockery::mustBe('tableName_id_seq'))
+            ->with(IsEqual::equalTo('tableName_id_seq'))
             ->andReturn(5);
 
         // Insert query call
@@ -390,7 +387,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('5', $result);
     }
 
-    public function testUpdate()
+    public function testUpdate(): void
     {
         // Query we use to test the update
         $query = [
@@ -411,7 +408,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db
             ->shouldReceive('change')
             ->once()
-            ->with(\Mockery::mustBe($queryAsString), \Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($queryAsString), IsEqual::equalTo($vars))
             ->andReturn(33);
 
         // Call the update
@@ -421,7 +418,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(33, $results);
     }
 
-    public function testChange()
+    public function testChange(): void
     {
         // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
@@ -435,7 +432,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -470,7 +467,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(5, $result);
     }
 
-    public function testChangeSimple()
+    public function testChangeSimple(): void
     {
         // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (5,"Dada",4534)';
@@ -483,7 +480,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
@@ -511,7 +508,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(5, $result);
     }
 
-    public function testInsertOrUpdateEmulationUpdate()
+    public function testInsertOrUpdateEmulationUpdate(): void
     {
         // Expected query and parameters
         $query = 'UPDATE "tablename" SET "name"=? WHERE "id"=?';
@@ -529,7 +526,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -564,7 +561,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testInsertOrUpdateEmulationInsert()
+    public function testInsertOrUpdateEmulationInsert(): void
     {
         // Expected query and parameters
         $query = 'UPDATE "tablename" SET "name"=? WHERE "id"=?';
@@ -582,7 +579,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -617,7 +614,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($insertQuery))
+            ->with(IsEqual::equalTo($insertQuery))
             ->andReturn($insertStatement);
 
         $this->bindValues($insertStatement, $insertVars);
@@ -652,7 +649,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testInsertOrUpdateEmulationDoNothingInsert()
+    public function testInsertOrUpdateEmulationDoNothingInsert(): void
     {
         // Expected query and parameters
         $query = 'UPDATE "tablename" SET "id"="id" WHERE "id"=?';
@@ -670,7 +667,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -705,7 +702,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($insertQuery))
+            ->with(IsEqual::equalTo($insertQuery))
             ->andReturn($insertStatement);
 
         $this->bindValues($insertStatement, $insertVars);
@@ -740,7 +737,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testDelete()
+    public function testDelete(): void
     {
         // Expected query and parameters
         $query = 'DELETE FROM "tablename" WHERE "mamamia"=? AND "fumbal" IN (?,?,?)';
@@ -754,7 +751,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -787,7 +784,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(5, $result);
     }
 
-    public function testDeleteSimple()
+    public function testDeleteSimple(): void
     {
         // Expected query and parameters
         $query = 'DELETE FROM "tablename" WHERE ("mamamia"=1)';
@@ -800,7 +797,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
@@ -830,7 +827,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(5, $result);
     }
 
-    public function testNoLowerLayer()
+    public function testNoLowerLayer(): void
     {
         // Expect an InvalidArgument exception
         $this->expectException(\LogicException::class);
@@ -839,7 +836,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db->setLowerLayer(\Mockery::mock(DBAbstractImplementation::class));
     }
 
-    public function testNoSelectObject1()
+    public function testNoSelectObject1(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -850,7 +847,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db->fetch($selectQueryInterface);
     }
 
-    public function testNoSelectObject2()
+    public function testNoSelectObject2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -861,7 +858,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db->clear($selectQueryInterface);
     }
 
-    public function testInsertNoTableName()
+    public function testInsertNoTableName(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -871,7 +868,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testDeleteNoTableName()
+    public function testDeleteNoTableName(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -881,7 +878,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testSelectStructuredSimple()
+    public function testSelectStructuredSimple(): void
     {
         // Query parameters
         $query = 'SELECT "blabla" FROM "yudihui" WHERE "lala"=?';
@@ -895,14 +892,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select([
@@ -932,7 +929,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
-    public function testSelectStructuredCatchAll()
+    public function testSelectStructuredCatchAll(): void
     {
         // Query parameters
         $query = 'SELECT "a".*,"b"."lala" FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
@@ -946,14 +943,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select([
@@ -985,14 +982,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select([
@@ -1013,7 +1010,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
-    public function testSelectStructuredCatchAllNoFields()
+    public function testSelectStructuredCatchAllNoFields(): void
     {
         // Query parameters
         $query = 'SELECT * FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
@@ -1027,14 +1024,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select([
@@ -1051,7 +1048,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
-    public function testSelectStructuredNoWhere()
+    public function testSelectStructuredNoWhere(): void
     {
         // Query parameters
         $query = 'SELECT * FROM "yudihui" "a","ahoi" "b"';
@@ -1065,14 +1062,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select([
@@ -1087,7 +1084,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
-    public function testSelectStructuredComplicated()
+    public function testSelectStructuredComplicated(): void
     {
         // Query parameters
         $query = 'SELECT "fufumama","b"."lalala","a"."setting_value" AS "result",' .
@@ -1121,14 +1118,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query . ' LIMIT 10 OFFSET 5'))
+            ->with(IsEqual::equalTo($query . ' LIMIT 10 OFFSET 5'))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         $result = $this->db->select([
@@ -1165,7 +1162,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(new DBSelectQuery($statementResult), $result);
     }
 
-    public function testFetchOneStructured()
+    public function testFetchOneStructured(): void
     {
         // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
@@ -1203,14 +1200,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -1233,7 +1230,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
-    public function testFetchAllStructured()
+    public function testFetchAllStructured(): void
     {
         // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
@@ -1262,14 +1259,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -1292,7 +1289,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
-    public function testFetchAllStructuredFlattened()
+    public function testFetchAllStructuredFlattened(): void
     {
         // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
@@ -1321,14 +1318,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -1351,7 +1348,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(['5', 'fhsdkj'], $result);
     }
 
-    public function testFetchOneStructured2()
+    public function testFetchOneStructured2(): void
     {
         // Query parameters
         $query = 'SELECT "c"."cart_id","c"."checkout_step","s"."session_id","s"."user_id","s"."domain" ' .
@@ -1408,14 +1405,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -1481,14 +1478,14 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         // "Execute" call on doctrine result statement
         $statement
             ->shouldReceive('executeQuery')
             ->once()
-            ->with(\Mockery::mustBe($vars))
+            ->with(IsEqual::equalTo($vars))
             ->andReturn($statementResult);
 
         // Return value from fetch
@@ -1511,7 +1508,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($returnValue, $result);
     }
 
-    public function testUpdateStructured()
+    public function testUpdateStructured(): void
     {
         $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=? WHERE "blabla"=?';
         $vars = ['nicevalue', 5];
@@ -1533,7 +1530,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -1565,7 +1562,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(33, $result);
     }
 
-    public function testUpdateStructuredNULL()
+    public function testUpdateStructuredNULL(): void
     {
         $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=?,"nullentry"=?,"active"=? WHERE "blabla"=?';
         $vars = ['nicevalue', null, 1, 5];
@@ -1578,7 +1575,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->connection
             ->shouldReceive('prepare')
             ->once()
-            ->with(\Mockery::mustBe($query))
+            ->with(IsEqual::equalTo($query))
             ->andReturn($statement);
 
         $this->bindValues($statement, $vars);
@@ -1612,7 +1609,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(33, $result);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionFields1()
+    public function testConvertToSelectSQLStringInvalidOptionFields1(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1630,7 +1627,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionFields2()
+    public function testConvertToSelectSQLStringInvalidOptionFields2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1650,7 +1647,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionFields3()
+    public function testConvertToSelectSQLStringInvalidOptionFields3(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1670,7 +1667,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionFields4()
+    public function testConvertToSelectSQLStringInvalidOptionFields4(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1690,7 +1687,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionFields5()
+    public function testConvertToSelectSQLStringInvalidOptionFields5(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1710,7 +1707,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionTables1()
+    public function testConvertToSelectSQLStringInvalidOptionTables1(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1727,7 +1724,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionTables2()
+    public function testConvertToSelectSQLStringInvalidOptionTables2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1745,7 +1742,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionTables3()
+    public function testConvertToSelectSQLStringInvalidOptionTables3(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1765,7 +1762,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionTables4()
+    public function testConvertToSelectSQLStringInvalidOptionTables4(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1785,7 +1782,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionTablesWithNULL()
+    public function testConvertToSelectSQLStringInvalidOptionTablesWithNULL(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1805,7 +1802,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionWhere1()
+    public function testConvertToSelectSQLStringInvalidOptionWhere1(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1822,7 +1819,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionWhere2()
+    public function testConvertToSelectSQLStringInvalidOptionWhere2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1841,7 +1838,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionWhere3()
+    public function testConvertToSelectSQLStringInvalidOptionWhere3(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1860,7 +1857,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionWhere4()
+    public function testConvertToSelectSQLStringInvalidOptionWhere4(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1879,7 +1876,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionWhere5()
+    public function testConvertToSelectSQLStringInvalidOptionWhere5(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1898,7 +1895,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionGroup1()
+    public function testConvertToSelectSQLStringInvalidOptionGroup1(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1920,7 +1917,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionGroup2()
+    public function testConvertToSelectSQLStringInvalidOptionGroup2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1942,7 +1939,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionOrder1()
+    public function testConvertToSelectSQLStringInvalidOptionOrder1(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1964,7 +1961,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionOrder2()
+    public function testConvertToSelectSQLStringInvalidOptionOrder2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -1986,7 +1983,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionOrder3()
+    public function testConvertToSelectSQLStringInvalidOptionOrder3(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2008,7 +2005,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionLimit()
+    public function testConvertToSelectSQLStringInvalidOptionLimit(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2027,7 +2024,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionLimitNoInteger()
+    public function testConvertToSelectSQLStringInvalidOptionLimitNoInteger(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2046,7 +2043,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionLimitBoolean()
+    public function testConvertToSelectSQLStringInvalidOptionLimitBoolean(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2065,7 +2062,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionOffset()
+    public function testConvertToSelectSQLStringInvalidOptionOffset(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2084,7 +2081,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionOffsetNoInteger()
+    public function testConvertToSelectSQLStringInvalidOptionOffsetNoInteger(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2103,7 +2100,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionLockNoBool()
+    public function testConvertToSelectSQLStringInvalidOptionLockNoBool(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2122,7 +2119,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionFieldAndFields()
+    public function testConvertToSelectSQLStringInvalidOptionFieldAndFields(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2141,7 +2138,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionTableAndTables()
+    public function testConvertToSelectSQLStringInvalidOptionTableAndTables(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2160,7 +2157,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToSelectSQLStringInvalidOptionResourceUsed()
+    public function testConvertToSelectSQLStringInvalidOptionResourceUsed(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2176,7 +2173,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToUpdateSQLStringInvalidOptionNoChanges()
+    public function testConvertToUpdateSQLStringInvalidOptionNoChanges(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2186,7 +2183,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToUpdateSQLStringInvalidOptionBadChange()
+    public function testConvertToUpdateSQLStringInvalidOptionBadChange(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2197,7 +2194,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToUpdateSQLStringInvalidOptionBadChange2()
+    public function testConvertToUpdateSQLStringInvalidOptionBadChange2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2210,7 +2207,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToUpdateSQLStringInvalidOptionBadExpression()
+    public function testConvertToUpdateSQLStringInvalidOptionBadExpression(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2220,7 +2217,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ]);
     }
 
-    public function testConvertToUpdateSQLStringInvalidOptionBadExpression2()
+    public function testConvertToUpdateSQLStringInvalidOptionBadExpression2(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2228,7 +2225,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $this->db->update('blobs.aa_sexy', [':no_equal_sign:' => 5], ['blabla' => 5]);
     }
 
-    public function testInsertOrUpdateEmulationNoIndex()
+    public function testInsertOrUpdateEmulationNoIndex(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -2239,7 +2236,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         ], []);
     }
 
-    public function testInsertOrUpdateEmulationIndexNotInRow()
+    public function testInsertOrUpdateEmulationIndexNotInRow(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 

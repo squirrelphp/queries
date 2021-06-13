@@ -2,6 +2,7 @@
 
 namespace Squirrel\Queries\Tests\Builder;
 
+use Mockery\MockInterface;
 use Squirrel\Queries\Builder\SelectEntries;
 use Squirrel\Queries\Builder\SelectIterator;
 use Squirrel\Queries\DBInterface;
@@ -9,17 +10,15 @@ use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 class SelectEntriesTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    /** @var DBInterface&MockInterface */
+    private DBInterface $db;
 
     protected function setUp(): void
     {
         $this->db = \Mockery::mock(DBInterface::class);
     }
 
-    public function testNoDataGetEntries()
+    public function testNoDataGetEntries(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -45,7 +44,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testGetEntries()
+    public function testGetEntries(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -104,7 +103,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testGetEntriesSingular()
+    public function testGetEntriesSingular(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -151,7 +150,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testOneEntry()
+    public function testOneEntry(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -209,7 +208,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testIterator()
+    public function testIterator(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -264,7 +263,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expectedResult, $results);
     }
 
-    public function testGetFlattenedFields()
+    public function testGetFlattenedFields(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -323,7 +322,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult, $results);
     }
 
-    public function testGetFlattenedIntegerFields()
+    public function testGetFlattenedIntegerFields(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -380,7 +379,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame([4, 5, 1, 9], $selectBuilder->getFlattenedIntegerFields());
     }
 
-    public function testGetFlattenedFloatFields()
+    public function testGetFlattenedFloatFields(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -437,7 +436,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame([1.3, 5.0, 5.3, 5.3], $selectBuilder->getFlattenedFloatFields());
     }
 
-    public function testGetFlattenedStringFields()
+    public function testGetFlattenedStringFields(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -494,7 +493,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(['one', '5', '5.3', 'true'], $selectBuilder->getFlattenedStringFields());
     }
 
-    public function testGetFlattenedBooleanFields()
+    public function testGetFlattenedBooleanFields(): void
     {
         $selectBuilder = new SelectEntries($this->db);
 
@@ -551,7 +550,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame([true, false, true, false, true, false], $selectBuilder->getFlattenedBooleanFields());
     }
 
-    public function testGetFlattenedIntegerFieldsWrongScalarType()
+    public function testGetFlattenedIntegerFieldsWrongScalarType(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -610,7 +609,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $selectBuilder->getFlattenedIntegerFields();
     }
 
-    public function testGetFlattenedIntegerFieldsWrongNonNumberType()
+    public function testGetFlattenedIntegerFieldsWrongNonNumberType(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -669,7 +668,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $selectBuilder->getFlattenedIntegerFields();
     }
 
-    public function testGetFlattenedFloatFieldsWrongScalarType()
+    public function testGetFlattenedFloatFieldsWrongScalarType(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -728,7 +727,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $selectBuilder->getFlattenedFloatFields();
     }
 
-    public function testGetFlattenedFloatFieldsWrongNonNumberType()
+    public function testGetFlattenedFloatFieldsWrongNonNumberType(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -787,7 +786,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $selectBuilder->getFlattenedFloatFields();
     }
 
-    public function testGetFlattenedBooleanFieldsWrongType()
+    public function testGetFlattenedBooleanFieldsWrongType(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 
@@ -846,7 +845,7 @@ class SelectEntriesTest extends \PHPUnit\Framework\TestCase
         $selectBuilder->getFlattenedBooleanFields();
     }
 
-    public function testGetFlattenedStringFieldsWrongType()
+    public function testGetFlattenedStringFieldsWrongType(): void
     {
         $this->expectException(DBInvalidOptionException::class);
 

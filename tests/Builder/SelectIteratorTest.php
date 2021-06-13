@@ -2,21 +2,17 @@
 
 namespace Squirrel\Queries\Tests\Builder;
 
+use Mockery\MockInterface;
 use Squirrel\Queries\Builder\SelectIterator;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
 
 class SelectIteratorTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    /** @var DBInterface&MockInterface */
+    private DBInterface $db;
 
-    /**
-     * @var array
-     */
-    private $query;
+    private array $query = [];
 
     protected function setUp(): void
     {
@@ -45,7 +41,7 @@ class SelectIteratorTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
-    public function testLoop()
+    public function testLoop(): void
     {
         $selectQuery = \Mockery::mock(DBSelectQueryInterface::class);
 

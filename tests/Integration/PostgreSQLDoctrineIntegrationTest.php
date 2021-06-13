@@ -45,7 +45,7 @@ class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
                 );';
     }
 
-    public function testSpecialTypes()
+    public function testSpecialTypes(): void
     {
         if (self::$db === null) {
             return;
@@ -70,6 +70,10 @@ class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
         $entry = self::$db->fetchOne([
             'table' => 'locations',
         ]);
+
+        if ($entry === null) {
+            throw new \LogicException('Inserted row not found');
+        }
 
         $entry['create_date'] = \intval($entry['create_date']);
 

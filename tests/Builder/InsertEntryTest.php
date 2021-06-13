@@ -2,22 +2,21 @@
 
 namespace Squirrel\Queries\Tests\Builder;
 
+use Mockery\MockInterface;
 use Squirrel\Queries\Builder\InsertEntry;
 use Squirrel\Queries\DBInterface;
 
 class InsertEntryTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    /** @var DBInterface&MockInterface */
+    private DBInterface $db;
 
     protected function setUp(): void
     {
         $this->db = \Mockery::mock(DBInterface::class);
     }
 
-    public function testNoDataInsert()
+    public function testNoDataInsert(): void
     {
         $insertBuilder = new InsertEntry($this->db);
 
@@ -33,7 +32,7 @@ class InsertEntryTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testInsert()
+    public function testInsert(): void
     {
         $insertBuilder = new InsertEntry($this->db);
 
@@ -58,7 +57,7 @@ class InsertEntryTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue(true);
     }
 
-    public function testInsertWithNewId()
+    public function testInsertWithNewId(): void
     {
         $insertBuilder = new InsertEntry($this->db);
 

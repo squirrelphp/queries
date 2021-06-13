@@ -2,22 +2,21 @@
 
 namespace Squirrel\Queries\Tests\Builder;
 
+use Mockery\MockInterface;
 use Squirrel\Queries\Builder\CountEntries;
 use Squirrel\Queries\DBInterface;
 
 class CountEntriesTest extends \PHPUnit\Framework\TestCase
 {
-    /**
-     * @var DBInterface
-     */
-    private $db;
+    /** @var DBInterface&MockInterface */
+    private DBInterface $db;
 
     protected function setUp(): void
     {
         $this->db = \Mockery::mock(DBInterface::class);
     }
 
-    public function testNoDataGetEntries()
+    public function testNoDataGetEntries(): void
     {
         $countBuilder = new CountEntries($this->db);
 
@@ -41,7 +40,7 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult[0], $results);
     }
 
-    public function testGetEntries()
+    public function testGetEntries(): void
     {
         $countBuilder = new CountEntries($this->db);
 
@@ -79,7 +78,7 @@ class CountEntriesTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expectedResult[0], $results);
     }
 
-    public function testGetEntriesSingular()
+    public function testGetEntriesSingular(): void
     {
         $countBuilder = new CountEntries($this->db);
 
