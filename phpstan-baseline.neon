@@ -1,7 +1,7 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedIntegerFields\\(\\) should return array\\<int\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedBooleanFields\\(\\) should return array\\<bool\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
 			count: 1
 			path: src/Builder/SelectEntries.php
 
@@ -11,14 +11,29 @@ parameters:
 			path: src/Builder/SelectEntries.php
 
 		-
+			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedIntegerFields\\(\\) should return array\\<int\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			count: 1
+			path: src/Builder/SelectEntries.php
+
+		-
 			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedStringFields\\(\\) should return array\\<string\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
 			count: 1
 			path: src/Builder/SelectEntries.php
 
 		-
-			message: "#^Method Squirrel\\\\Queries\\\\Builder\\\\SelectEntries\\:\\:getFlattenedBooleanFields\\(\\) should return array\\<bool\\> but returns array\\<bool\\|float\\|int\\|string\\|null\\>\\.$#"
+			message: "#^Dead catch \\- Doctrine\\\\DBAL\\\\Exception\\\\ConnectionException is never thrown in the try block\\.$#"
 			count: 1
-			path: src/Builder/SelectEntries.php
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Dead catch \\- Doctrine\\\\DBAL\\\\Exception\\\\DeadlockException\\|Doctrine\\\\DBAL\\\\Exception\\\\LockWaitTimeoutException is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Dead catch \\- Doctrine\\\\DBAL\\\\Exception\\\\DriverException is never thrown in the try block\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
 
 		-
 			message: "#^Cannot access offset 'v' on array\\<string, mixed\\>\\|false\\.$#"

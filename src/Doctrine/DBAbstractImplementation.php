@@ -195,7 +195,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Return autoincrement ID
-        return $this->connection->lastInsertId($table . '_' . $autoIncrement . '_seq');
+        return \strval($this->connection->lastInsertId($table . '_' . $autoIncrement . '_seq'));
     }
 
     public function update(string $table, array $changes, array $where = []): int
