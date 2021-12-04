@@ -21,7 +21,7 @@
     "require": {
         "php": ">=8.0",
         "ext-pdo": "*",
-        "squirrelphp/debug": "^0.5",
+        "squirrelphp/debug": "^1.0",
         "doctrine/dbal": "^3.0"
     },
     "require-dev": {
@@ -32,7 +32,7 @@
     },
     "suggest": {
         "squirrelphp/queries-bundle": "Symfony integration of squirrelphp/queries - automatic assembling of decorated connections",
-        "squirrelphp/entities": "Makes defining entities possible",
+        "squirrelphp/entities": "Makes defining typed entities possible and easy",
         "squirrelphp/entities-bundle": "Automatic integration of squirrelphp/entities in Symfony"
     },
     "config": {
