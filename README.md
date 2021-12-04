@@ -5,7 +5,7 @@ Squirrel Queries
 
 Provides a slimmed down concise interface for low level database queries and transactions (DBInterface) as well as a query builder to make it easier and more expressive to create queries (DBBuilderInterface). The interfaces are limited to avoid confusion/misuse and encourage fail-safe usage.
 
-Doctrine is used as the underlying connection (and abstraction), what we add are an insertOrUpdate functionality (known as UPSERT), structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.). This library also smoothes over some differences between MySQL, Postgres and SQLite.
+Doctrine DBAL is used for the underlying connection (and abstraction) handling, what we add are an insertOrUpdate functionality (known as UPSERT), structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.). This library also smoothes over some differences between MySQL, Postgres and SQLite. While DBAL is a dependency for now, when using this library you only need to configure/create the necessary DBAL connections in your code, no other parts of DBAL are relevant.
 
 By default this library provides two layers, one dealing with Doctrine DBAL (passing the queries, processing and returning the results) and one dealing with errors (DBErrorHandler). DBErrorHandler catches deadlocks and connection problems and tries to repeat the query or transaction, and it unifies the exceptions coming from DBAL so the originating call to DBInterface is provided and the error can easily be found.
 
@@ -29,7 +29,7 @@ Setting up
 
 Use Squirrel\Queries\DBInterface as a type hint in your services for the low-level interface, and/or Squirrel\Queries\DBBuilderInterface for the query builder. The low-level interface options are based upon Doctrine and PDO with some tweaks, and the builder interface is an expressive way to write structured (and not too complex) queries.
 
-If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are an addition to the low-level interface, helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
+If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are additions to the low-level interface, helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
 
 For a solution which integrates easily with the Symfony framework, check out [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrelphp/entities](https://github.com/squirrelphp/entities) and [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle).
 
@@ -67,7 +67,7 @@ If you want to assemble a DBInterface object yourself, something like the follow
     // anywhere you need it. Typehint it with
     // \Squirrel\Queries\DBInterface
 
-    $fetchEntry = function(DBInterface $db) {
+    $fetchEntry = function(DBInterface $db): array {
         return $db->fetchOne('SELECT * FROM table');
     };
 
@@ -108,7 +108,7 @@ This library has support for the three main open-source databases:
 
 - MySQL, all versions (at least 5.5+ is recommended)
 - MariaDB, all versions (MariaDB behaves almost identical to MySQL)
-- SQLite, all versions, although native UPSERT queries are only supported in SQLite 3.24+ (which is included in PHP 7.3+), the functionality is emulated in lower versions
+- SQLite, all versions, although native UPSERT queries are only supported in SQLite 3.24+, the functionality is emulated in lower versions
 - Postgres version 9.5 and above, because UPSERT queries were implemented in 9.5
 
 The functionality in this library has been tested against real versions of these databases to make sure it works, although there might be edge cases which warrant adjustments. If you find any issues please report them.
@@ -215,7 +215,7 @@ $selectStatement = $db->select('SELECT `fufumama`,`b`.`lalala`,`a`.`setting_valu
 - If an expression contains something like :fieldname: it is assumed that it is a field or table name which will then be escaped. For simple WHERE restrictions or fields definitions field names are escaped automatically.
 - You can use "field" if there is just one field, or "fields" for multiple fields. The same with "table" and "tables".
 - If you set "lock" to true "FOR UPDATE" is added to the query, so the results are locked within the current transaction.
-- The arguments are checked as much as possible and if an option/expression is not valid, a DBInvalidOptionException is thrown. This does not include SQL errors, as the SQL components knows nothing of the allowed field names, table names or what constitutes a valid SQL expression.
+- The arguments are checked as much as possible and if an option/expression is not valid, a DBInvalidOptionException is thrown. This does not include SQL errors, as the SQL components know nothing of the allowed field names, table names or what constitutes a valid SQL expression.
 
 You can pass a structured SELECT query directly to `fetchOne` and `fetchAll` to retrieve one or all results.
 
@@ -377,7 +377,7 @@ Just pass a callable/function to the `transaction` method and DBInterface will t
 #### Examples
 
 ```php
-$db->transaction(function(){
+$db->transaction(function() {
     // Do queries in here as much as you want, it will all be one transaction
     // and committed as soon as this function ends
 });
@@ -392,9 +392,9 @@ $db->transaction(function() use ($db) {
     ], 'tableId');
 
     $db->update('otherTable', [
-        'tableName' => 'Henry',
-    ], [
         'tableId' => $tableId,
+    ], [
+        'tableName' => 'Henry',
     ]);
 });
 ```
@@ -415,9 +415,9 @@ $db->transaction(function() use ($db) {
         // transaction function, which is what you would want / expect, so it starts
         // with the Henry insert again
         $db->update('otherTable', [
-            'tableName' => 'Henry',
-        ], [
             'tableId' => $tableId,
+        ], [
+            'tableName' => 'Henry',
         ]);
     });
 });
@@ -425,20 +425,20 @@ $db->transaction(function() use ($db) {
 
 If there is a deadlock or connection problem, the error handler (DBErrorHandler) will roll back the transaction and attempt to retry it 10 times, with increasing wait times inbetween. Only if there are 10 failures within about 30 seconds will the exception be escalated with a DBException.
 
-If you want to pass arguments to $func, this would be an example:
+If you want to pass arguments to $func, this would be an example (you can also add them to the `use` part):
 
 ```php
-$db->transaction(function($db, $table, $tableName) {
+$db->transaction(function(string $table, string $tableName) use ($db) {
     $tableId = $db->insert('myTable', [
         'tableName' => 'Henry',
     ], 'tableId');
 
     $db->update('otherTable', [
-        'tableName' => $tableName,
-    ], [
         'tableId' => $tableId,
+    ], [
+        'tableName' => $tableName,
     ]);
-}, $db, 'myTable', 'Henry');
+}, 'myTable', 'Henry');
 ```
 
 When using SELECT queries within a transaction you should always remember that the results are usually not locked (so not protected from UPDATE or DELETE), except if you apply "... FOR UPDATE" (in a string SELECT query) or by setting `lock` to true in a structured SELECT.
@@ -479,13 +479,14 @@ DBBuilderInterface offers the following functions:
 - transaction (to do a function within a transaction)
 - getDBInterface (to get the underlying DBInterface object)
 
-All except the last two return a builder object which helps you easily create a query and get the results. Compared to DBInterface you do not have to remember what data can be contained in a structured query - your IDE will suggest whatever is available. You can also have a look at the builder objects themselves - they are all very short.
+All except the last two return a builder object which helps you easily create a query and get the results. Compared to DBInterface you do not have to remember what data can be contained in a structured query - your IDE will suggest whatever is available.
 
 Looking at some examples should make the usage quite clear - here are some for each of the 6 builder functions:
 
 ### Count
 
 ```php
+// $usersNumber will be an integer
 $usersNumber = $dbBuilder
     ->count()
     ->inTables([
@@ -675,6 +676,8 @@ $rowsAffected = $dbBuilder
     ->writeAndReturnAffectedNumber();
 ```
 
+This explicit confirmation clause is needed to avoid executing queries where the `where` part was omitted by accident, which is a common mistake when writing/executing queries.
+
 ### Insert or Update
 
 This makes the insertOrUpdate functionality in DBInterface a bit easier to digest, using the same information:
@@ -737,6 +740,8 @@ $rowsAffected = $dbBuilder
     ->confirmNoWhereRestrictions()
     ->writeAndReturnAffectedNumber();
 ```
+
+This explicit confirmation clause is needed to avoid executing queries where the `where` part was omitted by accident, which is a common mistake when writing/executing queries.
 
 ### Transaction
 
@@ -806,7 +811,7 @@ This should make it easy to read and write queries, even if you don't know much 
 BLOB handling for Postgres
 --------------------------
 
-For MySQL and SQLite retrieving or inserting/updating BLOBs (Binary Large Objects) works just the same as with shorter/non-binary string fields. Postgres needs some adjustments, but these are made very easy bis this library:
+For MySQL and SQLite retrieving or inserting/updating BLOBs (Binary Large Objects) works just the same as with shorter/non-binary string fields. Postgres needs some adjustments, but these are streamlined by this library:
 
 - For SELECT queries, streams returned by Postgres are automatically converted into strings, mimicking how MySQL and SQLite are doing it
 - For INSERT/UPDATE queries, you need to wrap BLOB values with an instance of LargeObject provided by this library.
@@ -905,6 +910,6 @@ Sometimes a complex query can make more sense, but it should be the rare excepti
 
 [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle) is an integration of this library into Symfony, so you can get started quickly.
 
-[squirrelphp/entities](https://github.com/squirrelphp/entities) is a library built on top of `squirrelphp/queries` and offers support for entities and repositories while following all the above guidelines.
+[squirrelphp/entities](https://github.com/squirrelphp/entities) is a library built on top of `squirrelphp/queries` and offers support for typed entities and repositories while following all the above guidelines.
 
 [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle) is the Symfony bundle integrating entities and repositories into a Symfony project.
