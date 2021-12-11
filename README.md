@@ -609,7 +609,7 @@ There are four options to get the data from a select query builder:
 - **getIterator**, to get an object you can iterate over (foreach) so you can get one result after the other - this is implicitely used in the first example by putting the builder into the foreach loop, as the builder implements IteratorAggregate
 - **getAllEntries**, to retrieve an array with all the entries at once, which was the second example
 - **getOneEntry**, to just get exactly one entry, used in the third example
-- **getFlattenedFields**, which means the results are "flattened"
+- **getFlattenedFields**, which means the results are "flattened", with its type specific variants `getFlattenedIntegerFields`, `getFlattenedFloatFields`, `getFlattenedStringFields` and `getFlattenedBooleanFields`
 
 `getFlattenedFields` can be useful for something like this:
 
@@ -629,6 +629,8 @@ foreach ($userIds as $userId) {
 ```
 
 Instead of a list of arrays each with a field "userId", the results are flattened and directly return a list of user IDs. Flattening is mostly useful for IDs or other simple lists of values, where you just need one array instead of an array of an array.
+
+You can enforce a type on the flattened fields by using `getFlattenedIntegerFields`, `getFlattenedFloatFields`, `getFlattenedStringFields` or `getFlattenedBooleanFields`. This is recommended in order to be more type safe and make it easier for static analyzers/IDEs to understand your code. This library will then attempt to convert all values to the requested type and throw a `DBInvalidOptionException` if there is any ambiguity.
 
 ### Insert
 

@@ -86,8 +86,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (!($selectQuery instanceof DBSelectQuery)) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'Invalid select query class provided',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -104,8 +104,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (!($selectQuery instanceof DBSelectQuery)) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'Invalid select query class provided',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -154,8 +154,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (\strlen($table) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'No table name specified for insert',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -204,8 +204,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (\count($changes) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'No "changes" definition',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -229,8 +229,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (\strlen($table) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'No table name specified for delete',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -421,8 +421,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (\strlen($tableName) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'No table name specified for upsert',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -430,8 +430,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (\count($row) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'No insert data specified for upsert for table "' . $tableName . '"',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -439,8 +439,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         if (\count($indexColumns) === 0) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                DBInterface::class,
                 'No index specified for upsert for table "' . $tableName . '"',
+                ignoreClasses: DBInterface::class,
             );
         }
 
@@ -449,8 +449,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
             if (!isset($row[$fieldName])) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    DBInterface::class,
                     'Index values are missing in insert row values',
+                    ignoreClasses: DBInterface::class,
                 );
             }
         }

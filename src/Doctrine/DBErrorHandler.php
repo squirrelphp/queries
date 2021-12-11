@@ -152,9 +152,9 @@ class DBErrorHandler implements DBRawInterface
             if (count($lockRetries) === 0) {
                 throw Debug::createException(
                     DBLockException::class, // exception class to create
-                    DBInterface::class, // origin classes to skip when backtracking
-                    $e->getMessage(), // message of the new exception
-                    $e, // original/previous exception
+                    $e->getMessage(),
+                    ignoreClasses: DBInterface::class,
+                    previousException: $e,
                 );
             }
 
@@ -184,9 +184,9 @@ class DBErrorHandler implements DBRawInterface
             if ($connectionRetries === null) {
                 throw Debug::createException(
                     DBConnectionException::class, // exception class to create
-                    DBInterface::class, // origin classes to skip when backtracking
-                    $e->getMessage(), // message of the new exception
-                    $e, // original/previous exception
+                    $e->getMessage(),
+                    ignoreClasses: DBInterface::class,
+                    previousException: $e,
                 );
             }
 
@@ -209,9 +209,9 @@ class DBErrorHandler implements DBRawInterface
             // Throw DB exception for higher-up context to catch
             throw Debug::createException(
                 DBDriverException::class, // exception class to create
-                DBInterface::class, // origin classes to skip when backtracking
-                $e->getMessage(), // message of the new exception
-                $e, // original/previous exception
+                $e->getMessage(),
+                ignoreClasses: DBInterface::class,
+                previousException: $e,
             );
         } catch (\Exception | \Throwable $e) { // Other exception, throw it as is, we do not know how to deal with it
             // Attempt to roll back, suppress any possible exceptions
@@ -315,9 +315,9 @@ class DBErrorHandler implements DBRawInterface
             if ($connectionRetries === null) {
                 throw Debug::createException(
                     DBConnectionException::class,
-                    DBInterface::class,
                     $e->getMessage(),
-                    $e,
+                    ignoreClasses: DBInterface::class,
+                    previousException: $e,
                 );
             }
 
@@ -333,9 +333,9 @@ class DBErrorHandler implements DBRawInterface
             if (\count($lockRetries) === 0) {
                 throw Debug::createException(
                     DBLockException::class,
-                    DBInterface::class,
                     $e->getMessage(),
-                    $e,
+                    ignoreClasses: DBInterface::class,
+                    previousException: $e,
                 );
             }
 
@@ -347,9 +347,9 @@ class DBErrorHandler implements DBRawInterface
         } catch (DriverException $e) { // Some other SQL related exception
             throw Debug::createException(
                 DBDriverException::class,
-                DBInterface::class,
                 $e->getMessage(),
-                $e,
+                ignoreClasses: DBInterface::class,
+                previousException: $e,
             );
         }
     }

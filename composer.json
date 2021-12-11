@@ -21,7 +21,7 @@
     "require": {
         "php": ">=8.0",
         "ext-pdo": "*",
-        "squirrelphp/debug": "^1.0",
+        "squirrelphp/debug": "^2.0",
         "doctrine/dbal": "^3.0"
     },
     "require-dev": {

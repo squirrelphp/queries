@@ -35,8 +35,8 @@ class DBSQLiteImplementation extends DBPostgreSQLImplementation
             if (!isset($result['v'])) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    DBInterface::class,
                     'SQLite version could not be retrieved',
+                    ignoreClasses: DBInterface::class,
                 );
             }
 

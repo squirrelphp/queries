@@ -18,8 +18,8 @@ trait FlattenedFieldsWithTypeTrait
             if (!\is_integer($value) && !\is_string($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    [BuilderInterface::class],
                     'Flattened integers requested, but not all values were int or string',
+                    ignoreClasses: [BuilderInterface::class],
                 );
             }
 
@@ -35,8 +35,8 @@ trait FlattenedFieldsWithTypeTrait
             if (!\is_int($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    [BuilderInterface::class],
                     'Flattened integers requested, but not all values were integers',
+                    ignoreClasses: [BuilderInterface::class],
                 );
             }
         }
@@ -60,8 +60,8 @@ trait FlattenedFieldsWithTypeTrait
             if (!\is_float($value) && !\is_string($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    [BuilderInterface::class],
                     'Flattened floats requested, but not all values were float or string',
+                    ignoreClasses: [BuilderInterface::class],
                 );
             }
 
@@ -77,8 +77,8 @@ trait FlattenedFieldsWithTypeTrait
             if (!\is_float($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    [BuilderInterface::class],
                     'Flattened floats requested, but not all values were floats',
+                    ignoreClasses: [BuilderInterface::class],
                 );
             }
         }
@@ -106,8 +106,8 @@ trait FlattenedFieldsWithTypeTrait
             if (!\is_string($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    [BuilderInterface::class],
                     'Flattened strings requested, but not all values were strings',
+                    ignoreClasses: [BuilderInterface::class],
                 );
             }
         }
@@ -141,8 +141,8 @@ trait FlattenedFieldsWithTypeTrait
             if (!\is_bool($value)) {
                 throw Debug::createException(
                     DBInvalidOptionException::class,
-                    [BuilderInterface::class],
                     'Flattened booleans requested, but not all values were booleans',
+                    ignoreClasses: [BuilderInterface::class],
                 );
             }
         }

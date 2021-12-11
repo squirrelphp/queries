@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="4.13.1@5cf660f63b548ccd4a56f62d916ee4d6028e01a3">
+<files psalm-version="v4.15.0@a1b5e489e6fcebe40cb804793d964e99fc347820">
   <file src="src/Builder/FlattenedFieldsWithTypeTrait.php">
     <InvalidReturnType occurrences="4">
       <code>bool[]</code>
@@ -7,11 +7,6 @@
       <code>int[]</code>
       <code>string[]</code>
     </InvalidReturnType>
-  </file>
-  <file src="src/Builder/SelectIteratorTrait.php">
-    <ImplementedReturnTypeMismatch occurrences="1">
-      <code>int</code>
-    </ImplementedReturnTypeMismatch>
   </file>
   <file src="src/DBPassToLowerLayerTrait.php">
     <MissingConstructor occurrences="1">
@@ -27,6 +22,9 @@
     <InvalidPropertyAssignmentValue occurrences="1">
       <code>\Mockery::mock(DBPassToLowerLayerTrait::class)-&gt;makePartial()</code>
     </InvalidPropertyAssignmentValue>
+    <TypeDoesNotContainType occurrences="1">
+      <code>assertSame</code>
+    </TypeDoesNotContainType>
     <UndefinedClass occurrences="2">
       <code>$this-&gt;dbLowerLayerObject</code>
       <code>\Mockery::mock(DBPassToLowerLayerTrait::class)</code>
@@ -34,6 +32,11 @@
     <UndefinedInterfaceMethod occurrences="1">
       <code>setLowerLayer</code>
     </UndefinedInterfaceMethod>
+  </file>
+  <file src="tests/DoctrineErrorHandlerTest.php">
+    <TypeDoesNotContainType occurrences="1">
+      <code>assertSame</code>
+    </TypeDoesNotContainType>
   </file>
   <file src="tests/Integration/AbstractDoctrineIntegrationTests.php">
     <InvalidScalarArgument occurrences="2">

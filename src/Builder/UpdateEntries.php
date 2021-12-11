@@ -82,9 +82,9 @@ class UpdateEntries implements BuilderInterface
         if (\count($this->where) === 0 && $this->confirmNoWhere !== true) {
             throw Debug::createException(
                 DBInvalidOptionException::class,
-                [self::class],
                 'No restricting "where" arguments defined for UPDATE' .
                 'and no override confirmation with "confirmNoWhereRestrictions" call',
+                ignoreClasses: [self::class],
             );
         }
 
