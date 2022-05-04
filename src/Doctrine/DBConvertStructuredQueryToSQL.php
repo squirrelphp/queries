@@ -463,8 +463,35 @@ class DBConvertStructuredQueryToSQL
                 );
             }
 
-            // Add to list of finished expressions
-            $groupByProcessed[] = ($this->quoteIdentifier)($expression);
+            // Check if this is a custom expression, not just a field name to value expression
+            if (
+                \str_contains($expression, ' ')
+                || \str_contains($expression, '=')
+                || \str_contains($expression, '<')
+                || \str_contains($expression, '>')
+                || \str_contains($expression, '(')
+                || \str_contains($expression, ')')
+                || \str_contains($expression, '+')
+                || \str_contains($expression, '-')
+                || \str_contains($expression, '*')
+                || \str_contains($expression, '/')
+                || \str_contains($expression, '%')
+                || \str_contains($expression, '^')
+                || \str_contains($expression, '|')
+                || \str_contains($expression, '&')
+                || \str_contains($expression, '~')
+            ) {
+                // Colons found, which are used to escape variables
+                if (\str_contains($expression, ':')) {
+                    $expression = ($this->quoteExpression)($expression);
+                }
+
+                // Add to list of finished expressions
+                $groupByProcessed[] = $expression;
+            } else { // We assume just a field name to value(s) expression
+                // Add to list of finished expressions
+                $groupByProcessed[] = ($this->quoteIdentifier)($expression);
+            }
         }
 
         return \implode(',', $groupByProcessed);

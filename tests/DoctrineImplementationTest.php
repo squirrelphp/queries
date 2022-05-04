@@ -1097,7 +1097,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'AND "boring_field_name" IN (?,?,?,?) ' .
             'AND "another_boring_name" IS NULL ' .
             'AND "boolean_field"=? ' .
-            'GROUP BY "a"."field" ' .
+            'GROUP BY "a"."field",DATE("a"."field") ' .
             'ORDER BY "a"."field" DESC,"a"."field" + "b"."field" ASC';
         $vars = [5, 'orders_xml_override', 5, 3, 8, 13, 1];
 
@@ -1149,6 +1149,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
             'group' => [
                 'a.field',
+                'DATE(:a.field:)',
             ],
             'order' => [
                 'a.field' => 'DESC',
