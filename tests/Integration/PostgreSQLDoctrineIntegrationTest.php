@@ -75,12 +75,10 @@ class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
             throw new \LogicException('Inserted row not found');
         }
 
-        $entry['create_date'] = \intval($entry['create_date']);
-
         $this->assertEquals([
             'current_location' => '(5,13)',
             'ip_address' => '212.55.108.55',
-            'create_date' => 34534543,
+            'create_date' => '34534543',
         ], $entry);
     }
 }

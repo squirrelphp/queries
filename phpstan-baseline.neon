@@ -36,7 +36,47 @@ parameters:
 			path: src/Doctrine/DBErrorHandler.php
 
 		-
-			message: "#^Cannot access offset 'v' on array\\<string, mixed\\>\\|false\\.$#"
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:change\\(\\) should return int but returns mixed\\.$#"
 			count: 1
-			path: src/Doctrine/DBSQLiteImplementation.php
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:delete\\(\\) should return int but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:fetch\\(\\) should return array\\<string, mixed\\>\\|null but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:fetchAll\\(\\) should return array\\<int, array\\<string, mixed\\>\\> but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:fetchAllAndFlatten\\(\\) should return array\\<bool\\|float\\|int\\|string\\|null\\> but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:fetchOne\\(\\) should return array\\<string, mixed\\>\\|null but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:insert\\(\\) should return string\\|null but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:select\\(\\) should return Squirrel\\\\Queries\\\\DBSelectQueryInterface but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
+
+		-
+			message: "#^Method Squirrel\\\\Queries\\\\Doctrine\\\\DBErrorHandler\\:\\:update\\(\\) should return int but returns mixed\\.$#"
+			count: 1
+			path: src/Doctrine/DBErrorHandler.php
 

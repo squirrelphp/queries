@@ -59,7 +59,7 @@ services:
         image: mariadb:latest
         container_name: squirrel_queries_mariadb
         environment:
-            MYSQL_ROOT_PASSWORD: 'whatever'
-            MYSQL_DATABASE: 'shop'
-            MYSQL_USER: 'user'
-            MYSQL_PASSWORD: 'password'
+            MARIADB_ROOT_PASSWORD: 'whatever'
+            MARIADB_DATABASE: 'shop'
+            MARIADB_USER: 'user'
+            MARIADB_PASSWORD: 'password'

@@ -4,6 +4,7 @@ namespace Squirrel\Queries\Tests\Integration;
 
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\LargeObject;
+use Squirrel\Types\Coerce;
 
 abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestCase
 {
@@ -56,16 +57,16 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             'password' => 'secret',
             'email' => 'mary@mary.com',
             'birthdate' => '1984-05-08',
-            'balance' => 105.20,
+            'balance' => 105.2,
             'description' => 'I am dynamic and nice!',
             'picture' => new LargeObject(\hex2bin(\md5('dadaism'))),
             'active' => true,
-            'create_date' => '48674935',
+            'create_date' => 48674935,
         ];
 
         $userId = self::$db->insert('account', $accountData, 'user_id');
 
-        $this->assertEquals(1, $userId);
+        $this->assertSame('1', $userId);
 
         $insertedData = self::$db->fetchOne([
             'table' => 'account',
@@ -80,19 +81,9 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
         $accountData['picture'] = \hex2bin(\md5('dadaism'));
         $accountData['phone'] = null;
-        $accountData['user_id'] = $userId;
-        $insertedData['user_id'] = \intval($insertedData['user_id']);
+        $accountData['user_id'] = Coerce::toInt($userId);
 
-        $accountData['active'] = \intval($accountData['active']);
-        $insertedData['active'] = \intval($insertedData['active']);
-
-        $accountData['create_date'] = \intval($accountData['create_date']);
-        $insertedData['create_date'] = \intval($insertedData['create_date']);
-
-        $accountData['balance'] = \round($accountData['balance'], 2);
-        $insertedData['balance'] = \round($insertedData['balance'], 2);
-
-        $this->assertEquals($accountData, $insertedData);
+        $this->compareDataArrays($accountData, $insertedData);
     }
 
     public function testInsertOrUpdateWithUpdate(): void
@@ -123,7 +114,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             'description' => 'I am dynamic and nice!',
             'picture' => \md5('dadaism'),
             'active' => true,
-            'create_date' => '48671935',
+            'create_date' => 48671935,
         ];
 
         self::$db->insertOrUpdate('account', $accountData, ['user_id']);
@@ -142,16 +133,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         $accountData['phone'] = null;
         $insertedData['user_id'] = \intval($insertedData['user_id']);
 
-        $accountData['active'] = \intval($accountData['active']);
-        $insertedData['active'] = \intval($insertedData['active']);
-
-        $accountData['create_date'] = \intval($accountData['create_date']);
-        $insertedData['create_date'] = \intval($insertedData['create_date']);
-
-        $accountData['balance'] = \round($accountData['balance'], 2);
-        $insertedData['balance'] = \round($insertedData['balance'], 2);
-
-        $this->assertEquals($accountData, $insertedData);
+        $this->compareDataArrays($accountData, $insertedData);
     }
 
     public function testInsertOrUpdateWithInsert(): void
@@ -173,16 +155,16 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         ], 'user_id');
 
         $accountData = [
-            'user_id' => '2',
+            'user_id' => 2,
             'username' => 'Mary',
             'password' => 'secret',
             'email' => 'other@mary.com',
             'birthdate' => '1984-05-08',
-            'balance' => '300',
+            'balance' => 300,
             'description' => 'I am dynamic and nice!',
             'picture' => \md5('dadaism'),
-            'active' => 1,
-            'create_date' => '48674935',
+            'active' => true,
+            'create_date' => 48674935,
         ];
 
         self::$db->insertOrUpdate('account', $accountData, ['user_id']);
@@ -199,19 +181,8 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         }
 
         $accountData['phone'] = null;
-        $accountData['user_id'] = \intval($accountData['user_id']);
-        $insertedData['user_id'] = \intval($insertedData['user_id']);
 
-        $accountData['active'] = \intval($accountData['active']);
-        $insertedData['active'] = \intval($insertedData['active']);
-
-        $accountData['create_date'] = \intval($accountData['create_date']);
-        $insertedData['create_date'] = \intval($insertedData['create_date']);
-
-        $accountData['balance'] = \round($accountData['balance'], 2);
-        $insertedData['balance'] = \round($insertedData['balance'], 2);
-
-        $this->assertEquals($accountData, $insertedData);
+        $this->compareDataArrays($accountData, $insertedData);
     }
 
     public function testInsertOrUpdateNoUpdate(): void
@@ -248,7 +219,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             throw new \LogicException('Inserted row not found');
         }
 
-        $this->assertEquals(800, \intval($insertedData['balance']));
+        $this->assertEquals(800, Coerce::toInt($insertedData['balance']));
     }
 
     public function testUpdate(): void
@@ -259,16 +230,18 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
         $this->initializeDataWithDefaultTwoEntries();
 
+        $picture = new LargeObject(\hex2bin(\md5('dadaism')));
+
         $accountData = [
             'username' => 'John',
             'password' => 'othersecret',
             'email' => 'supi@mary.com',
             'birthdate' => '1984-05-08',
-            'balance' => '800',
+            'balance' => 800,
             'description' => 'I am dynamicer and nicer!',
-            'picture' => new LargeObject(\hex2bin(\md5('dadaism'))),
-            'active' => 1,
-            'create_date' => '486749356',
+            'picture' => $picture,
+            'active' => true,
+            'create_date' => 486749356,
         ];
 
         // UPDATE where changes are made and we should get one affected row
@@ -287,23 +260,13 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             throw new \LogicException('Inserted row not found');
         }
 
-        $accountData['picture'] = \hex2bin(\md5('dadaism'));
+        $accountData['picture'] = $picture->getString();
         $accountData['phone'] = null;
         $accountData['user_id'] = 2;
-        $insertedData['user_id'] = \intval($insertedData['user_id']);
 
-        $accountData['active'] = \intval($accountData['active']);
-        $insertedData['active'] = \intval($insertedData['active']);
+        $this->compareDataArrays($accountData, $insertedData);
 
-        $accountData['create_date'] = \intval($accountData['create_date']);
-        $insertedData['create_date'] = \intval($insertedData['create_date']);
-
-        $accountData['balance'] = \round($accountData['balance'], 2);
-        $insertedData['balance'] = \round($insertedData['balance'], 2);
-
-        $this->assertEquals($accountData, $insertedData);
-
-        $accountData['picture'] = new LargeObject(\hex2bin(\md5('dadaism')));
+        $accountData['picture'] = $picture;
 
         // UPDATE where we do not change anything and test if we still get 1 as $rowsAffected
         $rowsAffected = self::$db->update('account', $accountData, ['user_id' => 2]);
@@ -715,5 +678,22 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
             'active' => 1,
             'create_date' => 486749356,
         ], 'user_id');
+    }
+
+    private function compareDataArrays(array $expected, array $actual): void
+    {
+        $this->assertCount(\count($expected), $actual);
+
+        foreach ($expected as $fieldName => $value) {
+            if (\is_int($value)) {
+                $this->assertSame($value, Coerce::toInt($actual[$fieldName]));
+            } elseif (\is_float($value)) {
+                $this->assertSame($value, Coerce::toFloat($actual[$fieldName]));
+            } elseif (\is_bool($value)) {
+                $this->assertSame($value, Coerce::toBool($actual[$fieldName]));
+            } else {
+                $this->assertSame($value, $actual[$fieldName]);
+            }
+        }
     }
 }
