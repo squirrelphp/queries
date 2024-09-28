@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="5.25.0@01a8eb06b9e9cc6cfb6a320bf9fb14331919d505">
+  <file src="src/Builder/FlattenedFieldsWithTypeTrait.php">
+    <InvalidReturnType>
+      <code><![CDATA[bool[]]]></code>
+      <code><![CDATA[float[]]]></code>
+      <code><![CDATA[int[]]]></code>
+      <code><![CDATA[string[]]]></code>
+    </InvalidReturnType>
+  </file>
+  <file src="src/DBPassToLowerLayerTrait.php">
+    <LessSpecificImplementedReturnType>
+      <code><![CDATA[?array]]></code>
+      <code><![CDATA[?array]]></code>
+      <code><![CDATA[array]]></code>
+      <code><![CDATA[array]]></code>
+    </LessSpecificImplementedReturnType>
+    <MissingConstructor>
+      <code><![CDATA[$lowerLayer]]></code>
+    </MissingConstructor>
+  </file>
+  <file src="tests/ConnectionErrorHandlerTest.php">
+    <TypeDoesNotContainType>
+      <code><![CDATA[assertSame]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="tests/DBPassToLowerLayerTest.php">
+    <TypeDoesNotContainType>
+      <code><![CDATA[assertSame]]></code>
+    </TypeDoesNotContainType>
+  </file>
+</files>

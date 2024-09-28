@@ -1,13 +1,11 @@
 <?php
 
-namespace Squirrel\Queries\Doctrine;
-
-use Squirrel\Queries\LargeObject;
+namespace Squirrel\Queries\DB;
 
 /**
  * DB MySQL implementation using Doctrine DBAL with custom upsert functionality
  */
-class DBMySQLImplementation extends DBAbstractImplementation
+class MySQLImplementation extends AbstractImplementation
 {
     public function insertOrUpdate(string $table, array $row = [], array $index = [], ?array $update = null): void
     {
@@ -37,22 +35,8 @@ class DBMySQLImplementation extends DBAbstractImplementation
             'ON DUPLICATE KEY UPDATE ' . $updatePart;
 
         $connection = $this->getConnection();
-        $statement = $connection->prepare($query);
-
-        $paramCounter = 1;
-        foreach ($queryValues as $columnValue) {
-            if (\is_bool($columnValue)) {
-                $columnValue = \intval($columnValue);
-            }
-
-            $statement->bindValue(
-                $paramCounter++,
-                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
-                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
-            );
-        }
-
-        $statementResult = $statement->executeQuery();
-        $statementResult->free();
+        $statement = $connection->prepareQuery($query);
+        $connection->executeQuery($statement, $queryValues);
+        $connection->freeResults($statement);
     }
 }

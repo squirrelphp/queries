@@ -2,57 +2,66 @@
 
 namespace Squirrel\Queries\Tests\Integration;
 
-use Doctrine\DBAL\DriverManager;
+use Squirrel\Connection\Config\Mysql;
+use Squirrel\Connection\PDO\ConnectionPDO;
+use Squirrel\Queries\DB\MySQLImplementation;
 use Squirrel\Queries\DBInterface;
-use Squirrel\Queries\Doctrine\DBSQLiteImplementation;
 
-class SQLiteDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
+class MySQLIntegrationTest extends AbstractCommonTests
 {
-    protected static function initializeDatabaseAndGetConnection(): ?DBInterface
+    protected static function shouldExecuteTests(): bool
     {
-        if (!isset($_SERVER['SQUIRREL_TEST_SQLITE'])) {
-            return null;
+        return isset($_SERVER['SQUIRREL_CONNECTION_HOST_MYSQL']);
+    }
+
+    protected static function waitUntilThisDatabaseReady(): void
+    {
+        if (!self::shouldExecuteTests()) {
+            return;
         }
 
-        // Create a doctrine connection
-        $dbalConnection = DriverManager::getConnection([
-            'url' => $_SERVER['SQUIRREL_TEST_SQLITE'],
-            'driverOptions' => [
-                \PDO::ATTR_EMULATE_PREPARES => false,
-            ],
-        ]);
+        static::waitUntilDatabaseReady($_SERVER['SQUIRREL_CONNECTION_HOST_MYSQL'], 3306);
+    }
 
-        // Create implementation layer
-        return new DBSQLiteImplementation($dbalConnection);
+    protected static function getConnection(): DBInterface
+    {
+        return new MySQLImplementation(new ConnectionPDO(
+            new Mysql(
+                host: $_SERVER['SQUIRREL_CONNECTION_HOST_MYSQL'],
+                user: $_SERVER['SQUIRREL_CONNECTION_USER'],
+                password: $_SERVER['SQUIRREL_CONNECTION_PASSWORD'],
+                dbname: $_SERVER['SQUIRREL_CONNECTION_DBNAME'],
+            ),
+        ));
     }
 
     protected static function createAccountTableQuery(): string
     {
         return 'CREATE TABLE account(
-                  user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INT AUTO_INCREMENT,
                   username VARCHAR (50) NOT NULL,
                   password VARCHAR (50) NOT NULL,
-                  email VARCHAR (250) UNIQUE NOT NULL,
+                  email VARCHAR (250) NOT NULL,
                   phone VARCHAR (100) NULL,
                   birthdate DATE NULL,
                   balance DECIMAL(9,2) DEFAULT 0,
                   description BLOB,
                   picture BLOB,
-                  active BOOLEAN,
-                  create_date INTEGER NOT NULL
-                );';
+                  active TINYINT,
+                  create_date INTEGER NOT NULL,
+                  PRIMARY KEY (user_id),
+                  UNIQUE (email)
+                ) ENGINE InnoDB;';
     }
 
     public function testInsertNoLargeObject(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $accountData = [
             'username' => 'Mary',
             'password' => 'secret',
-            'email' => 'sqlite@mary.com',
+            'email' => 'mysql@mary.com',
             'birthdate' => '1984-05-08',
             'balance' => 105.20,
             'description' => 'I am dynamic and nice!',

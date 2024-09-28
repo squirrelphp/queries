@@ -25,7 +25,7 @@ class CountEntries implements BuilderInterface
     private bool $blocking = false;
 
     public function __construct(
-        private DBInterface $db,
+        private readonly DBInterface $db,
     ) {
     }
 

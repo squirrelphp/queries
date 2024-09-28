@@ -1,7 +1,7 @@
 {
     "name": "squirrelphp/queries",
     "type": "library",
-    "description": "Slimmed down concise interface and query builder for database queries and transactions which can be layered / decorated.",
+    "description": "Slimmed down concise interfaces and query builder for database queries and transactions which can be layered / decorated.",
     "keywords": [
         "php",
         "mysql",
@@ -19,17 +19,18 @@
         }
     ],
     "require": {
-        "php": ">=8.0",
-        "ext-pdo": "*",
-        "squirrelphp/debug": "^2.0",
-        "doctrine/dbal": "^3.0"
+        "php": ">=8.2",
+        "squirrelphp/connection": "^0.2",
+        "squirrelphp/debug": "^2.0"
     },
     "require-dev": {
-        "bamarni/composer-bin-plugin": "^1.8",
-        "captainhook/plugin-composer": "^5.0",
-        "phpunit/phpunit": "^9.0",
+        "captainhook/captainhook-phar": "^5.0",
+        "captainhook/hook-installer": "^1.0",
+        "phpunit/phpunit": "^11.2",
         "mockery/mockery": "^1.0",
-        "squirrelphp/types": "^1.0"
+        "squirrelphp/types": "^1.0",
+        "symfony/finder": "^7.0",
+        "symfony/process": "^7.0"
     },
     "suggest": {
         "squirrelphp/queries-bundle": "Symfony integration of squirrelphp/queries - automatic assembling of decorated connections",
@@ -39,9 +40,13 @@
     "config": {
         "sort-packages": false,
         "allow-plugins": {
-            "bamarni/composer-bin-plugin": true,
-            "captainhook/plugin-composer": true,
-            "composer/package-versions-deprecated": true
+            "captainhook/captainhook-phar": true,
+            "captainhook/hook-installer": true
+        }
+    },
+    "extra": {
+        "captainhook": {
+            "config": "tools/captainhook.json"
         }
     },
     "autoload": {
@@ -55,19 +60,19 @@
         }
     },
     "scripts": {
-        "phpstan": "vendor/bin/phpstan analyse",
-        "phpstan_full": "vendor/bin/phpstan clear-result-cache && vendor/bin/phpstan analyse",
-        "phpstan_base": "vendor/bin/phpstan analyse --generate-baseline",
-        "psalm": "vendor/bin/psalm --show-info=false",
-        "psalm_full": "vendor/bin/psalm --clear-cache && vendor/bin/psalm --show-info=false",
-        "psalm_base": "vendor/bin/psalm --set-baseline=psalm-baseline.xml",
-        "phpunit": "vendor/bin/phpunit --colors=always",
-        "phpunit_clover": "vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml",
-        "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html tests/_reports",
-        "phpcs": "vendor/bin/phpcs --standard=ruleset.xml --extensions=php --cache=.phpcs-cache --colors src tests",
-        "phpcsd": "vendor/bin/phpcs -s --standard=ruleset.xml --extensions=php --cache=.phpcs-cache --colors src tests",
-        "phpcsfix": "vendor/bin/phpcbf --standard=ruleset.xml --extensions=php --cache=.phpcs-cache src tests",
-        "binupdate": "@composer bin all update --ansi",
-        "bininstall": "@composer bin all install --ansi"
+        "phpstan": "vendor-bin/phpstan/vendor/bin/phpstan analyse --configuration=tools/phpstan.neon",
+        "phpstan_full": "rm -Rf tools/cache/phpstan && vendor-bin/phpstan/vendor/bin/phpstan analyse --configuration=tools/phpstan.neon",
+        "phpstan_base": "vendor-bin/phpstan/vendor/bin/phpstan analyse --configuration=tools/phpstan.neon --generate-baseline=tools/phpstan-baseline.php",
+        "psalm": "vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --show-info=false",
+        "psalm_full": "vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --clear-cache && vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --show-info=false",
+        "psalm_base": "vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --set-baseline=tools/psalm-baseline.xml",
+        "phpunit": "vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --cache-result-file=tools/cache/.phpunit.result.cache --colors=always --testsuite=unit",
+        "phpunit_clover": "vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --cache-result-file=tools/cache/.phpunit.result.cache --coverage-text --coverage-clover build/logs/clover.xml",
+        "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --coverage-html=tests/_reports",
+        "phpcs": "vendor-bin/phpcs/vendor/bin/phpcs --standard=tools/ruleset.xml --extensions=php --cache=tools/cache/.phpcs-cache --colors src tests",
+        "phpcs_diff": "vendor-bin/phpcs/vendor/bin/phpcs -s --standard=tools/ruleset.xml --extensions=php --cache=tools/cache/.phpcs-cache --colors src tests",
+        "phpcs_fix": "vendor-bin/phpcs/vendor/bin/phpcbf --standard=tools/ruleset.xml --extensions=php --cache=tools/cache/.phpcs-cache --colors src tests",
+        "binupdate": "bin/vendorbin update",
+        "binoutdated": "bin/vendorbin outdated"
     }
 }

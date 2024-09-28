@@ -2,56 +2,32 @@
 
 namespace Squirrel\Queries\Tests;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Result;
-use Doctrine\DBAL\Statement;
 use Hamcrest\Core\IsEqual;
 use Mockery\MockInterface;
+use Squirrel\Connection\ConnectionInterface;
+use Squirrel\Connection\ConnectionQueryInterface;
+use Squirrel\Queries\DB\AbstractImplementation;
+use Squirrel\Queries\DB\DBSelectQuery;
 use Squirrel\Queries\DBSelectQueryInterface;
-use Squirrel\Queries\Doctrine\DBAbstractImplementation;
-use Squirrel\Queries\Doctrine\DBSelectQuery;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
 
 /**
  * Test abstract Doctrine implementation parts
  */
-class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
+class ImplementationTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var DBAbstractImplementation&MockInterface */
-    private DBAbstractImplementation $db;
-    /** @var Connection&MockInterface */
-    private Connection $connection;
+    use SharedFunctionalityTrait;
 
-    /**
-     * Prepare common aspects of all tests
-     */
+    private AbstractImplementation&MockInterface $db;
+    private ConnectionInterface&MockInterface $connection;
+
     protected function setUp(): void
     {
-        // Mock of the Doctrine Connection class
-        $this->connection = \Mockery::mock(Connection::class);
+        $this->connection = \Mockery::mock(ConnectionInterface::class);
+        $this->connection->shouldReceive('quoteIdentifier')->andReturnUsing([$this, 'quoteIdentifier']);
 
-        // Implementation class
-        $this->db = \Mockery::mock(DBAbstractImplementation::class)->makePartial();
+        $this->db = \Mockery::mock(AbstractImplementation::class)->makePartial();
         $this->db->__construct($this->connection);
-
-        // Make sure quoteIdentifier works as expected
-        $this->connection
-            ->shouldReceive('quoteIdentifier')
-            ->andReturnUsing(function (string $identifier): string {
-                if (strpos($identifier, ".") !== false) {
-                    $parts = array_map(
-                        function ($p) {
-                            return '"' . str_replace('"', '""', $p) . '"';
-                        },
-                        explode(".", $identifier),
-                    );
-
-                    return implode(".", $parts);
-                }
-
-                return '"' . str_replace('"', '""', $identifier) . '"';
-            });
     }
 
     /**
@@ -79,19 +55,17 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         // Make sure no transaction is running at the beginning
         $this->assertSame(false, $this->db->inTransaction());
 
-        // Expect a "beginTransaction" call
         $this->connection
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Actual transaction call
         $result = $this->db->transaction(function () {
             // Make sure we are now in a transaction
             $this->assertSame(true, $this->db->inTransaction());
 
             // A commit is expected next
             $this->connection
-                ->shouldReceive('commit')
+                ->shouldReceive('commitTransaction')
                 ->once();
 
             // Return value to make sure it is passed along
@@ -124,210 +98,98 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testSelect(): void
     {
-        // Query parameters
         $query = 'SELECT blabla FROM yudihui';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
         $result = $this->db->select($query, $vars);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
     }
 
     public function testFetch(): void
     {
-        // Doctrine result
-        $statementResult = \Mockery::mock(Result::class);
+        $statementResult = \Mockery::mock(ConnectionQueryInterface::class);
 
-        // Select query object
         $selectQuery = new DBSelectQuery($statementResult);
 
-        // Return value from fetch
         $returnValue = ['fieldName' => 'dada'];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAssociative')
+        $this->connection
+            ->shouldReceive('fetchOne')
             ->once()
+            ->with(IsEqual::equalTo($statementResult))
             ->andReturn($returnValue);
 
-        // Make the fetch call
         $result = $this->db->fetch($selectQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
     }
 
     public function testClear(): void
     {
-        // Doctrine result
-        $statementResult = \Mockery::mock(Result::class);
+        $statementResult = \Mockery::mock(ConnectionQueryInterface::class);
 
-        // Select query object
         $selectQuery = new DBSelectQuery($statementResult);
 
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
+        $this->connection
+            ->shouldReceive('freeResults')
+            ->once()
+            ->with(IsEqual::equalTo($statementResult));
 
-        // Make the fetch call
         $this->db->clear($selectQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertTrue(true);
     }
 
     public function testFetchOne(): void
     {
-        // Query parameters
         $query = 'SELECT blabla FROM yudihui';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
         $returnValue = ['dada'];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAssociative')
+        $this->connection
+            ->shouldReceive('fetchOne')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchOne($query, $vars);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
     }
 
     public function testFetchAll(): void
     {
-        // Query parameters
         $query = 'SELECT blabla FROM yudihui';
         $vars = [0, 'dada', 3.5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
         $returnValue = ['dada', 'mumu', 'hihihi'];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAllAssociative')
+        $this->connection
+            ->shouldReceive('fetchAll')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchAll($query, $vars);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
-    }
-
-    private function bindValues(MockInterface $statement, array $vars): void
-    {
-        $varCounter = 1;
-
-        foreach ($vars as $var) {
-            $statement
-                ->shouldReceive('bindValue')
-                ->once()
-                ->with(IsEqual::equalTo($varCounter++), IsEqual::equalTo($var), \PDO::PARAM_STR);
-        }
     }
 
     public function testInsert(): void
     {
-        // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
         $vars = [5, 'Dada', 1, 43535];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Insert query call
         $this->db->insert('tableName', [
             'id' => 5,
             'name' => 'Dada',
@@ -335,61 +197,33 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'lastUpdate' => 43535,
         ]);
 
-        // Make sure the query has ended with the correct result
         $this->assertTrue(true);
     }
 
     public function testLastInsertId(): void
     {
-        // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (?,?,?)';
         $vars = [5, 'Dada', 43535];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
+        $this->prepareForQueryWithVars($query, $vars);
 
         $this->connection
             ->shouldReceive('lastInsertId')
             ->once()
-            ->with(IsEqual::equalTo('tableName_id_seq'))
+            ->withNoArgs()
             ->andReturn(5);
 
-        // Insert query call
         $result = $this->db->insert('tableName', [
             'id' => 5,
             'name' => 'Dada',
             'lastUpdate' => 43535,
         ], 'id');
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals('5', $result);
     }
 
     public function testUpdate(): void
     {
-        // Query we use to test the update
         $query = [
             'changes' => [
                 'boringfield' => 33,
@@ -400,62 +234,33 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // What we convert the query into
         $queryAsString = 'UPDATE "dada" SET "boringfield"=? WHERE "blabla"=?';
         $vars = [33, 5];
 
-        // Change call within the db class
         $this->db
             ->shouldReceive('change')
             ->once()
             ->with(IsEqual::equalTo($queryAsString), IsEqual::equalTo($vars))
             ->andReturn(33);
 
-        // Call the update
         $results = $this->db->update($query['table'], $query['changes'], $query['where']);
 
-        // Make sure we received the right results
         $this->assertSame(33, $results);
     }
 
     public function testChange(): void
     {
-        // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)';
         $vars = [5, 'Dada', 1, 43535];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(5);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Insert query call
         $result = $this->db->change('INSERT INTO "tableName" ("id","name","active","lastUpdate") VALUES (?,?,?,?)', [
             5,
             'Dada',
@@ -463,54 +268,28 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             43535,
         ]);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals(5, $result);
     }
 
     public function testChangeSimple(): void
     {
-        // Expected query and parameters
         $query = 'INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (5,"Dada",4534)';
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, []);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(5);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Insert query call
         $result = $this->db->change('INSERT INTO "tableName" ("id","name","lastUpdate") VALUES (5,"Dada",4534)');
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals(5, $result);
     }
 
     public function testInsertOrUpdateEmulationUpdate(): void
     {
-        // Expected query and parameters
         $query = 'UPDATE "tablename" SET "name"=? WHERE "id"=?';
         $vars = ['Andy', 13];
 
@@ -518,39 +297,16 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(1);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
         $this->connection
-            ->shouldReceive('commit')
+            ->shouldReceive('commitTransaction')
             ->once();
 
         $this->db->insertOrUpdateEmulation('tablename', [
@@ -563,7 +319,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testInsertOrUpdateEmulationInsert(): void
     {
-        // Expected query and parameters
         $query = 'UPDATE "tablename" SET "name"=? WHERE "id"=?';
         $vars = ['Andy', 13];
 
@@ -571,74 +326,27 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(0);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Expected query and parameters
         $insertQuery = 'INSERT INTO "tablename" ("id","name") VALUES (?,?)';
         $insertVars = [13, 'Andy'];
 
-        // Doctrine statement
-        $insertStatement = \Mockery::mock(Statement::class);
-        $insertStatementResult = \Mockery::mock(Result::class);
+        $insertStatement = $this->prepareForQueryWithVars($insertQuery, $insertVars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($insertQuery))
-            ->andReturn($insertStatement);
-
-        $this->bindValues($insertStatement, $insertVars);
-
-        // "Execute" call on doctrine result statement
-        $insertStatement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($insertStatementResult);
-
-        // "RowCount" call on doctrine result statement
-        $insertStatementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($insertStatement))
             ->andReturn(1);
 
-        // Close result set
-        $insertStatementResult
-            ->shouldReceive('free')
-            ->once();
-
         $this->connection
-            ->shouldReceive('commit')
+            ->shouldReceive('commitTransaction')
             ->once();
 
         $this->db->insertOrUpdateEmulation('tablename', [
@@ -651,7 +359,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testInsertOrUpdateEmulationDoNothingInsert(): void
     {
-        // Expected query and parameters
         $query = 'UPDATE "tablename" SET "id"="id" WHERE "id"=?';
         $vars = [13];
 
@@ -659,74 +366,27 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ->shouldReceive('beginTransaction')
             ->once();
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(0);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Expected query and parameters
         $insertQuery = 'INSERT INTO "tablename" ("id","name") VALUES (?,?)';
         $insertVars = [13, 'Andy'];
 
-        // Doctrine statement
-        $insertStatement = \Mockery::mock(Statement::class);
-        $insertStatementResult = \Mockery::mock(Result::class);
+        $insertStatement = $this->prepareForQueryWithVars($insertQuery, $insertVars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($insertQuery))
-            ->andReturn($insertStatement);
-
-        $this->bindValues($insertStatement, $insertVars);
-
-        // "Execute" call on doctrine result statement
-        $insertStatement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($insertStatementResult);
-
-        // "RowCount" call on doctrine result statement
-        $insertStatementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($insertStatement))
             ->andReturn(1);
 
-        // Close result set
-        $insertStatementResult
-            ->shouldReceive('free')
-            ->once();
-
         $this->connection
-            ->shouldReceive('commit')
+            ->shouldReceive('commitTransaction')
             ->once();
 
         $this->db->insertOrUpdateEmulation('tablename', [
@@ -739,101 +399,50 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testDelete(): void
     {
-        // Expected query and parameters
         $query = 'DELETE FROM "tablename" WHERE "mamamia"=? AND "fumbal" IN (?,?,?)';
         $vars = [13, 3, 5, 9];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(5);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Insert query call
         $result = $this->db->delete('tablename', [
             'mamamia' => $vars[0],
             'fumbal' => [$vars[1], $vars[2], $vars[3]],
         ]);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals(5, $result);
     }
 
     public function testDeleteSimple(): void
     {
-        // Expected query and parameters
         $query = 'DELETE FROM "tablename" WHERE ("mamamia"=1)';
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, []);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(5);
 
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
-
-        // Insert query call
         $result = $this->db->delete('tablename', [
             '"mamamia"=1',
         ]);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals(5, $result);
     }
 
     public function testNoLowerLayer(): void
     {
-        // Expect an InvalidArgument exception
         $this->expectException(\LogicException::class);
 
         // No lower layer may be set with the actual implementation
-        $this->db->setLowerLayer(\Mockery::mock(DBAbstractImplementation::class));
+        $this->db->setLowerLayer(\Mockery::mock(AbstractImplementation::class));
     }
 
     public function testNoSelectObject1(): void
@@ -880,27 +489,10 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectStructuredSimple(): void
     {
-        // Query parameters
         $query = 'SELECT "blabla" FROM "yudihui" WHERE "lala"=?';
         $vars = [5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query, $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'fields' => [
@@ -914,8 +506,9 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
+
+        $statement = $this->prepareForQueryWithVars($query, $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'field' => 'blabla',
@@ -925,33 +518,15 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
     }
 
     public function testSelectStructuredCatchAll(): void
     {
-        // Query parameters
         $query = 'SELECT "a".*,"b"."lala" FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
         $vars = [5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query, $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'fields' => [
@@ -967,30 +542,11 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
 
-        // Query parameters
         $query = 'SELECT a.*,"b"."lala" FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
-        $vars = [5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query, $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'fields' => [
@@ -1006,33 +562,15 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
     }
 
     public function testSelectStructuredCatchAllNoFields(): void
     {
-        // Query parameters
         $query = 'SELECT * FROM "yudihui" "a","ahoi" "b" WHERE "a"."lala"=?';
         $vars = [5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query, $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'tables' => [
@@ -1044,33 +582,15 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
     }
 
     public function testSelectStructuredNoWhere(): void
     {
-        // Query parameters
         $query = 'SELECT * FROM "yudihui" "a","ahoi" "b"';
         $vars = [];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query, $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'tables' => [
@@ -1080,13 +600,11 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'where' => [],
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
     }
 
     public function testSelectStructuredComplicated(): void
     {
-        // Query parameters
         $query = 'SELECT "fufumama","b"."lalala","a"."setting_value" AS "result",' .
             '("a"."setting_value"+"b"."blabla_value") AS "result2" ' .
             'FROM "blobs"."aa_sexy" "a","blobs"."aa_blubli" "b" ' .
@@ -1101,32 +619,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'ORDER BY "a"."field" DESC,"a"."field" + "b"."field" ASC';
         $vars = [5, 'orders_xml_override', 5, 3, 8, 13, 1];
 
-        // Emulation of the Doctrine platform class
-        $platform = \Mockery::mock(AbstractPlatform::class)->makePartial();
-
-        // Return the platform if it is asked for by the connection
-        $this->connection
-            ->shouldReceive('getDatabasePlatform')
-            ->once()
-            ->andReturn($platform);
-
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query . ' LIMIT 10 OFFSET 5'))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
+        $statement = $this->prepareForQueryWithVars($query . ' LIMIT 10 OFFSET 5', $vars, expectFreeResults: false);
 
         $result = $this->db->select([
             'fields' => [
@@ -1159,18 +652,15 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'offset' => 5,
         ]);
 
-        // Make sure the query has ended with the correct result
-        $this->assertEquals(new DBSelectQuery($statementResult), $result);
+        $this->assertEquals(new DBSelectQuery($statement), $result);
     }
 
     public function testFetchOneStructured(): void
     {
-        // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
             'FROM "blobs"."aa_stats_user_agents" WHERE "user_agent_hash"=?';
         $vars = ['Mozilla'];
 
-        // Structured query to test
         $structuredQuery = [
             'fields' => [
                 'id' => 'user_agent_id',
@@ -1184,61 +674,27 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Emulation of the Doctrine platform class
-        $platform = \Mockery::mock(AbstractPlatform::class)->makePartial();
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // Return the platform if it is asked for by the connection
-        $this->connection
-            ->shouldReceive('getDatabasePlatform')
-            ->once()
-            ->andReturn($platform);
-
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
         $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAssociative')
+        $this->connection
+            ->shouldReceive('fetchOne')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchOne($structuredQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
     }
 
     public function testFetchAllStructured(): void
     {
-        // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
             'FROM "blobs"."aa_stats_user_agents" WHERE "user_agent_hash"=?';
         $vars = ['Mozilla'];
 
-        // Structured query to test
         $structuredQuery = [
             'fields' => [
                 'id' => 'user_agent_id',
@@ -1252,52 +708,27 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
         $returnValue = [['id' => '5', 'hash' => 'fhsdkj']];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAllAssociative')
+        $this->connection
+            ->shouldReceive('fetchAll')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchAll($structuredQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
     }
 
     public function testFetchAllStructuredFlattened(): void
     {
-        // Query parameters
         $query = 'SELECT "user_agent_id" AS "id","user_agent_hash" AS "hash" ' .
             'FROM "blobs"."aa_stats_user_agents" WHERE "user_agent_hash"=?';
         $vars = ['Mozilla'];
 
-        // Structured query to test
         $structuredQuery = [
             'fields' => [
                 'id' => 'user_agent_id',
@@ -1311,47 +742,23 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
         $returnValue = [['id' => '5', 'hash' => 'fhsdkj']];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAllAssociative')
+        $this->connection
+            ->shouldReceive('fetchAll')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchAllAndFlatten($structuredQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals(['5', 'fhsdkj'], $result);
     }
 
     public function testFetchOneStructured2(): void
     {
-        // Query parameters
         $query = 'SELECT "c"."cart_id","c"."checkout_step","s"."session_id","s"."user_id","s"."domain" ' .
             'FROM ' . '"carts"' . ' "c",' . '"sessions"' . ' "s" ' .
             'WHERE ("c"."session_id" = "s"."session_id") ' .
@@ -1364,7 +771,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'FOR UPDATE';
         $vars = [5, 'aagdhf', 13, 19, 'example.com'];
 
-        // Structured query to test
         $structuredQuery = [
             'tables' => [
                 ':carts: :c:',
@@ -1389,53 +795,20 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'lock' => true,
         ];
 
-        // Emulation of the Doctrine platform class
-        $platform = \Mockery::mock(AbstractPlatform::class)->makePartial();
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // Return the platform if it is asked for by the connection
-        $this->connection
-            ->shouldReceive('getDatabasePlatform')
-            ->once()
-            ->andReturn($platform);
-
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
         $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
 
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAssociative')
+        $this->connection
+            ->shouldReceive('fetchOne')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchOne($structuredQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
 
-        // Query parameters
         $query = 'SELECT "c"."cart_id","c"."checkout_step","s"."session_id","s"."user_id","s"."domain" ' .
             'FROM ' . '"carts"' . ' "c",' . '"sessions"' . ' "s" ' .
             'WHERE (c.session_id = s.session_id) ' .
@@ -1445,9 +818,7 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             'AND "c"."create_date"=? ' .
             'AND "s"."domain"=? ' .
             'AND (s.user_id <= 0)';
-        $vars = [5, 'aagdhf', 13, 19, 'example.com'];
 
-        // Structured query to test
         $structuredQuery = [
             'tables' => [
                 'carts c',
@@ -1471,41 +842,16 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
+            ->shouldReceive('fetchOne')
             ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->with(IsEqual::equalTo($vars))
-            ->andReturn($statementResult);
-
-        // Return value from fetch
-        $returnValue = ['id' => '5', 'hash' => 'fhsdkj'];
-
-        // Fetch result set
-        $statementResult
-            ->shouldReceive('fetchAssociative')
-            ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn($returnValue);
-
-        // "Execute" call on doctrine result statement
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->fetchOne($structuredQuery);
 
-        // Make sure the query has ended with the correct result
         $this->assertEquals($returnValue, $result);
     }
 
@@ -1514,45 +860,13 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=? WHERE "blabla"=?';
         $vars = ['nicevalue', 5];
 
-        // Emulation of the Doctrine platform class
-        $platform = \Mockery::mock(AbstractPlatform::class)->makePartial();
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // Return the platform if it is asked for by the connection
         $this->connection
-            ->shouldReceive('getDatabasePlatform')
-            ->once()
-            ->andReturn($platform);
-
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
-
-        // "Prepare" call to doctrine connection
-        $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(33);
-
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->update('blobs.aa_sexy', [
             'anyfieldname' => 'nicevalue',
@@ -1568,36 +882,13 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
         $query = 'UPDATE "blobs"."aa_sexy" SET "anyfieldname"=?,"nullentry"=?,"active"=? WHERE "blabla"=?';
         $vars = ['nicevalue', null, 1, 5];
 
-        // Doctrine statement and result
-        $statement = \Mockery::mock(Statement::class);
-        $statementResult = \Mockery::mock(Result::class);
+        $statement = $this->prepareForQueryWithVars($query, $vars);
 
-        // "Prepare" call to doctrine connection
         $this->connection
-            ->shouldReceive('prepare')
-            ->once()
-            ->with(IsEqual::equalTo($query))
-            ->andReturn($statement);
-
-        $this->bindValues($statement, $vars);
-
-        // "Execute" call on doctrine result statement
-        $statement
-            ->shouldReceive('executeQuery')
-            ->once()
-            ->withNoArgs()
-            ->andReturn($statementResult);
-
-        // "RowCount" call on doctrine result statement
-        $statementResult
             ->shouldReceive('rowCount')
             ->once()
+            ->with(IsEqual::equalTo($statement))
             ->andReturn(33);
-
-        // Close result set
-        $statementResult
-            ->shouldReceive('free')
-            ->once();
 
         $result = $this->db->update('blobs.aa_sexy', [
             'anyfieldname' => 'nicevalue',
@@ -1614,7 +905,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => 'stringinsteadofarray',
             'tables' => [
@@ -1632,7 +922,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 new \stdClass(),
@@ -1652,7 +941,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'field' => new \stdClass(),
@@ -1672,7 +960,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 ':field:' => 'field',
@@ -1692,7 +979,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 8,
@@ -1712,7 +998,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1729,7 +1014,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1747,7 +1031,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1767,7 +1050,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1787,7 +1069,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1807,7 +1088,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1824,7 +1104,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1843,7 +1122,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1862,7 +1140,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1881,7 +1158,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1900,7 +1176,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1922,7 +1197,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1944,7 +1218,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1966,7 +1239,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -1988,7 +1260,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2010,7 +1281,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2029,7 +1299,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2048,7 +1317,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2067,7 +1335,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2086,7 +1353,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2105,7 +1371,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2124,7 +1389,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'field' => 'boringfield',
             'fields' => [
@@ -2143,7 +1407,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2162,7 +1425,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->select([
             'fields' => [
                 'boringfield',
@@ -2178,7 +1440,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->update('blobs.aa_sexy', [], [
             'blabla' => 5,
         ]);
@@ -2188,7 +1449,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->update('blobs.aa_sexy', [new \stdClass()], [
             'blabla' => 5,
             'dada' => true,
@@ -2199,7 +1459,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->update('blobs.aa_sexy', [
             'dada' => new \stdClass(),
         ], [
@@ -2212,7 +1471,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->update('blobs.aa_sexy', ['no_assignment'], [
             'blabla' => 5,
         ]);
@@ -2222,7 +1480,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->update('blobs.aa_sexy', [':no_equal_sign:' => 5], ['blabla' => 5]);
     }
 
@@ -2230,7 +1487,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->insertOrUpdateEmulation('tablename', [
             'id' => 13,
             'name' => 'Andy',
@@ -2241,7 +1497,6 @@ class DoctrineImplementationTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBInvalidOptionException::class);
 
-        // Try it with the invalid option
         $this->db->insertOrUpdateEmulation('tablename', [
             'id2' => 13,
             'name' => 'Andy',

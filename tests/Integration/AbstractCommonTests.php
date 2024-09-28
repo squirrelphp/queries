@@ -2,15 +2,19 @@
 
 namespace Squirrel\Queries\Tests\Integration;
 
+use Squirrel\Connection\LargeObject;
 use Squirrel\Queries\DBInterface;
-use Squirrel\Queries\LargeObject;
 use Squirrel\Types\Coerce;
 
-abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestCase
+abstract class AbstractCommonTests extends \PHPUnit\Framework\TestCase
 {
-    protected static ?DBInterface $db = null;
+    protected static DBInterface $db;
 
-    abstract protected static function initializeDatabaseAndGetConnection(): ?DBInterface;
+    abstract protected static function shouldExecuteTests(): bool;
+
+    abstract protected static function waitUntilThisDatabaseReady(): void;
+
+    abstract protected static function getConnection(): DBInterface;
 
     abstract protected static function createAccountTableQuery(): string;
 
@@ -30,27 +34,31 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
         }
     }
 
+    protected static function getConnectionAndInitializeAccount(): DBInterface
+    {
+        $db = static::getConnection();
+
+        $db->change('DROP TABLE IF EXISTS account');
+        $db->change(static::createAccountTableQuery());
+
+        return $db;
+    }
+
     public static function setUpBeforeClass(): void
     {
-        self::$db = static::initializeDatabaseAndGetConnection();
+        static::waitUntilThisDatabaseReady();
     }
 
     protected function setUp(): void
     {
-        if (self::$db === null) {
+        if (!static::shouldExecuteTests()) {
             $this->markTestSkipped('Not in an environment with correct database');
         }
-
-        // Recreate account table
-        self::$db->change('DROP TABLE IF EXISTS account');
-        self::$db->change($this->createAccountTableQuery());
     }
 
     public function testInsert(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $accountData = [
             'username' => 'Mary',
@@ -88,9 +96,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testInsertOrUpdateWithUpdate(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         self::$db->insert('account', [
             'username' => 'Mary',
@@ -138,9 +144,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testInsertOrUpdateWithInsert(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         self::$db->insert('account', [
             'username' => 'Mary',
@@ -187,9 +191,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testInsertOrUpdateNoUpdate(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $this->initializeDataWithDefaultTwoEntries();
 
@@ -224,9 +226,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testUpdate(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $this->initializeDataWithDefaultTwoEntries();
 
@@ -276,9 +276,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testCount(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $rowData = self::$db->fetchOne([
             'table' => 'account',
@@ -315,9 +313,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testSelect(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $rowData = self::$db->fetchOne([
             'table' => 'account',
@@ -362,9 +358,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testSelectFlattened(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $this->initializeDataWithDefaultTwoEntries();
 
@@ -385,9 +379,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testSelectFieldsWithAlias(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $this->initializeDataWithDefaultTwoEntries();
 
@@ -421,9 +413,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testSelectWithGroupByOrderBy(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         self::$db->insert('account', [
             'username' => 'Mary',
@@ -579,9 +569,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testTransactionSelectAndUpdate(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $this->initializeDataWithDefaultTwoEntries();
 
@@ -629,9 +617,7 @@ abstract class AbstractDoctrineIntegrationTests extends \PHPUnit\Framework\TestC
 
     public function testDelete(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         $this->initializeDataWithDefaultTwoEntries();
 

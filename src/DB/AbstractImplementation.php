@@ -1,14 +1,13 @@
 <?php
 
-namespace Squirrel\Queries\Doctrine;
+namespace Squirrel\Queries\DB;
 
-use Doctrine\DBAL\Connection;
+use Squirrel\Connection\ConnectionInterface;
 use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\DBRawInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
-use Squirrel\Queries\LargeObject;
 
 /**
  * DB implementation using Doctrine DBAL without the upsert functionality,
@@ -16,10 +15,12 @@ use Squirrel\Queries\LargeObject;
  *
  * No error handling on this layer at all - this needs another layer like
  * the DBErrorHandler class to handle transaction and connection failures
+ *
+ * @internal
  */
-abstract class DBAbstractImplementation implements DBRawInterface
+abstract class AbstractImplementation implements DBRawInterface
 {
-    protected DBConvertStructuredQueryToSQL $structuredQueryConverter;
+    protected readonly ConvertStructuredQueryToSQL $structuredQueryConverter;
 
     /**
      * Whether there is currently a transaction active, to avoid nested
@@ -28,9 +29,9 @@ abstract class DBAbstractImplementation implements DBRawInterface
     private bool $inTransaction = false;
 
     public function __construct(
-        private Connection $connection,
+        private readonly ConnectionInterface $connection,
     ) {
-        $this->structuredQueryConverter = new DBConvertStructuredQueryToSQL(
+        $this->structuredQueryConverter = new ConvertStructuredQueryToSQL(
             [$this, 'quoteIdentifier'],
             [$this, 'quoteExpression'],
         );
@@ -51,7 +52,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
 
         // Run the function and commit transaction
         $result = $func(...$arguments);
-        $this->connection->commit();
+        $this->connection->commitTransaction();
 
         // Go back to "we are not in a transaction anymore"
         $this->inTransaction = false;
@@ -73,52 +74,36 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Prepare and execute query
-        $statement = $this->connection->prepare($query);
-        $statementResult = $statement->executeQuery($vars);
+        $connectionQuery = $this->connection->prepareQuery($query);
+        $this->connection->executeQuery($connectionQuery, $vars);
 
         // Return select query object with PDO statement
-        return new DBSelectQuery($statementResult);
+        return new DBSelectQuery($connectionQuery);
     }
 
     public function fetch(DBSelectQueryInterface $selectQuery): ?array
     {
-        // Make sure we have a valid DBSelectQuery object
-        if (!($selectQuery instanceof DBSelectQuery)) {
-            throw Debug::createException(
-                DBInvalidOptionException::class,
-                'Invalid select query class provided',
-                ignoreClasses: DBInterface::class,
-            );
-        }
+        $selectQuery = $this->getSelectObject($selectQuery);
 
         // Get the result - can be an array of the entry, or false if it is empty
-        $result = $selectQuery->getStatement()->fetchAssociative();
-
-        // Return one result as an array
-        return ($result === false ? null : $result);
+        return $this->connection->fetchOne($selectQuery->getStatement());
     }
 
     public function clear(DBSelectQueryInterface $selectQuery): void
     {
-        // Make sure we have a valid DBSelectQuery object
-        if (!($selectQuery instanceof DBSelectQuery)) {
-            throw Debug::createException(
-                DBInvalidOptionException::class,
-                'Invalid select query class provided',
-                ignoreClasses: DBInterface::class,
-            );
-        }
+        $selectQuery = $this->getSelectObject($selectQuery);
 
         // Close the result set
-        $selectQuery->getStatement()->free();
+        $this->connection->freeResults($selectQuery->getStatement());
     }
 
     public function fetchOne(string|array $query, array $vars = []): ?array
     {
         // Use our internal functions to not repeat ourselves
         $selectQuery = $this->select($query, $vars);
-        $result = $this->fetch($selectQuery);
-        $this->clear($selectQuery);
+        $selectQuery = $this->getSelectObject($selectQuery);
+        $result = $this->connection->fetchOne($selectQuery->getStatement());
+        $this->connection->freeResults($selectQuery->getStatement());
 
         // Return query result
         return $result;
@@ -132,12 +117,12 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Prepare and execute query
-        $statement = $this->connection->prepare($query);
-        $statementResult = $statement->executeQuery($vars);
+        $statement = $this->connection->prepareQuery($query);
+        $this->connection->executeQuery($statement, $vars);
 
         // Get result and close result set
-        $result = $statementResult->fetchAllAssociative();
-        $statementResult->free();
+        $result = $this->connection->fetchAll($statement);
+        $this->connection->freeResults($statement);
 
         // Return query result
         return $result;
@@ -173,21 +158,9 @@ abstract class DBAbstractImplementation implements DBRawInterface
             'VALUES (' . (\count($row) > 0 ? \implode(',', $placeholders) : '') . ')';
 
         // Prepare and execute query
-        $statement = $this->connection->prepare($query);
-        $paramCounter = 1;
-        foreach ($columnValues as $columnValue) {
-            if (\is_bool($columnValue)) {
-                $columnValue = \intval($columnValue);
-            }
-
-            $statement->bindValue(
-                $paramCounter++,
-                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
-                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
-            );
-        }
-        $statementResult = $statement->executeQuery();
-        $statementResult->free();
+        $statement = $this->connection->prepareQuery($query);
+        $this->connection->executeQuery($statement, $columnValues);
+        $this->connection->freeResults($statement);
 
         // No autoincrement index - no insert ID return value needed
         if (\strlen($autoIncrement) === 0) {
@@ -195,7 +168,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         }
 
         // Return autoincrement ID
-        return \strval($this->connection->lastInsertId($table . '_' . $autoIncrement . '_seq'));
+        return $this->connection->lastInsertId();
     }
 
     public function update(string $table, array $changes, array $where = []): int
@@ -247,26 +220,14 @@ abstract class DBAbstractImplementation implements DBRawInterface
     public function change(string $query, array $vars = []): int
     {
         // Prepare and execute query
-        $statement = $this->connection->prepare($query);
-        $paramCounter = 1;
-        foreach ($vars as $columnValue) {
-            if (\is_bool($columnValue)) {
-                $columnValue = \intval($columnValue);
-            }
-
-            $statement->bindValue(
-                $paramCounter++,
-                ($columnValue instanceof LargeObject) ? $columnValue->getStream() : $columnValue,
-                ($columnValue instanceof LargeObject) ? \PDO::PARAM_LOB : \PDO::PARAM_STR,
-            );
-        }
-        $statementResult = $statement->executeQuery();
+        $statement = $this->connection->prepareQuery($query);
+        $this->connection->executeQuery($statement, $vars);
 
         // Get affected rows
-        $result = $statementResult->rowCount();
+        $result = $this->connection->rowCount($statement);
 
         // Close query
-        $statementResult->free();
+        $this->connection->freeResults($statement);
 
         // Return affected rows
         return $result;
@@ -290,8 +251,8 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $list = [];
 
         // Go through results and reduce the array to just a list of column values
-        foreach ($results as $entryKey => $entryArray) {
-            foreach ($entryArray as $fieldName => $fieldValue) {
+        foreach ($results as $entryArray) {
+            foreach ($entryArray as $fieldValue) {
                 $list[] = $fieldValue;
             }
         }
@@ -344,10 +305,10 @@ abstract class DBAbstractImplementation implements DBRawInterface
             (isset($select['limit']) && $select['limit'] > 0)
             || (isset($select['offset']) && $select['offset'] > 0)
         ) {
-            $sql = $this->connection->getDatabasePlatform()->modifyLimitQuery(
+            $sql = $this->addLimitOffsetToQuery(
                 $sql,
-                $select['limit'] ?? null,
-                $select['offset'] ?? null,
+                limit: $select['limit'] ?? null,
+                offset: $select['offset'] ?? null,
             );
         }
 
@@ -481,7 +442,7 @@ abstract class DBAbstractImplementation implements DBRawInterface
         $this->inTransaction = $inTransaction;
     }
 
-    public function getConnection(): Connection
+    public function getConnection(): ConnectionInterface
     {
         return $this->connection;
     }
@@ -490,5 +451,31 @@ abstract class DBAbstractImplementation implements DBRawInterface
     {
         throw new \LogicException('Lower DBRawInterface layers cannot be set in ' . __METHOD__ .
             ' because we are already at the lowest level of implementation');
+    }
+
+    private function getSelectObject(DBSelectQueryInterface $selectQuery): DBSelectQuery
+    {
+        if (!($selectQuery instanceof DBSelectQuery)) {
+            throw Debug::createException(
+                DBInvalidOptionException::class,
+                'Invalid select query class provided',
+                ignoreClasses: DBInterface::class,
+            );
+        }
+
+        return $selectQuery;
+    }
+
+    protected function addLimitOffsetToQuery(string $sql, ?int $limit = null, ?int $offset = null): string
+    {
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . $limit;
+        }
+
+        if ($offset !== null) {
+            $sql .= ' OFFSET ' . $offset;
+        }
+
+        return $sql;
     }
 }

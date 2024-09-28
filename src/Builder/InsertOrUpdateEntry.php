@@ -27,7 +27,7 @@ class InsertOrUpdateEntry implements BuilderInterface
     private ?array $valuesOnUpdate = null;
 
     public function __construct(
-        private DBInterface $db,
+        private readonly DBInterface $db,
     ) {
     }
 

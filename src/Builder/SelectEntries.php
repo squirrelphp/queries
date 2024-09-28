@@ -54,7 +54,7 @@ class SelectEntries implements BuilderInterface, \IteratorAggregate
     private bool $blocking = false;
 
     public function __construct(
-        private DBInterface $db,
+        private readonly DBInterface $db,
     ) {
     }
 

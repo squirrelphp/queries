@@ -2,30 +2,37 @@
 
 namespace Squirrel\Queries\Tests\Integration;
 
-use Doctrine\DBAL\DriverManager;
+use Squirrel\Connection\Config\Pgsql;
+use Squirrel\Connection\PDO\ConnectionPDO;
+use Squirrel\Queries\DB\PostgreSQLImplementation;
 use Squirrel\Queries\DBInterface;
-use Squirrel\Queries\Doctrine\DBPostgreSQLImplementation;
 
-class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
+class PostgreSQLIntegrationTest extends AbstractCommonTests
 {
-    protected static function initializeDatabaseAndGetConnection(): ?DBInterface
+    protected static function shouldExecuteTests(): bool
     {
-        if (!isset($_SERVER['SQUIRREL_TEST_POSTGRES'])) {
-            return null;
+        return isset($_SERVER['SQUIRREL_CONNECTION_HOST_POSTGRES']);
+    }
+
+    protected static function waitUntilThisDatabaseReady(): void
+    {
+        if (!self::shouldExecuteTests()) {
+            return;
         }
 
-        static::waitUntilDatabaseReady('squirrel_queries_postgres', 5432);
+        static::waitUntilDatabaseReady($_SERVER['SQUIRREL_CONNECTION_HOST_POSTGRES'], 5432);
+    }
 
-        // Create a doctrine connection
-        $dbalConnection = DriverManager::getConnection([
-            'url' => $_SERVER['SQUIRREL_TEST_POSTGRES'],
-            'driverOptions' => [
-                \PDO::ATTR_EMULATE_PREPARES => false,
-            ],
-        ]);
-
-        // Create implementation layer
-        return new DBPostgreSQLImplementation($dbalConnection);
+    protected static function getConnection(): DBInterface
+    {
+        return new PostgreSQLImplementation(new ConnectionPDO(
+            new Pgsql(
+                host: $_SERVER['SQUIRREL_CONNECTION_HOST_POSTGRES'],
+                user: $_SERVER['SQUIRREL_CONNECTION_USER'],
+                password: $_SERVER['SQUIRREL_CONNECTION_PASSWORD'],
+                dbname: $_SERVER['SQUIRREL_CONNECTION_DBNAME'],
+            ),
+        ));
     }
 
     protected static function createAccountTableQuery(): string
@@ -47,9 +54,7 @@ class PostgreSQLDoctrineIntegrationTest extends AbstractDoctrineIntegrationTests
 
     public function testSpecialTypes(): void
     {
-        if (self::$db === null) {
-            return;
-        }
+        self::$db = static::getConnectionAndInitializeAccount();
 
         self::$db->change('DROP TABLE IF EXISTS locations');
 

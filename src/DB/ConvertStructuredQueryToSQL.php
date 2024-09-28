@@ -1,16 +1,18 @@
 <?php
 
-namespace Squirrel\Queries\Doctrine;
+namespace Squirrel\Queries\DB;
 
+use Squirrel\Connection\LargeObject;
 use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBInterface;
 use Squirrel\Queries\Exception\DBInvalidOptionException;
-use Squirrel\Queries\LargeObject;
 
 /**
  * Converts parts of a structured query to pure (and safe) SQL
+ *
+ * @internal
  */
-class DBConvertStructuredQueryToSQL
+class ConvertStructuredQueryToSQL
 {
     /**
      * @var callable Function to quote an identifier (table name or field name)

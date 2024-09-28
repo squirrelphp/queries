@@ -2,6 +2,8 @@
 
 namespace Squirrel\Queries;
 
+use Squirrel\Connection\ConnectionInterface;
+
 /**
  * Default implementation of all DBRawInterface functions to pass them to lower layer
  */
@@ -96,7 +98,7 @@ trait DBPassToLowerLayerTrait
         $this->lowerLayer->setTransaction($inTransaction);
     }
 
-    public function getConnection(): object
+    public function getConnection(): ConnectionInterface
     {
         return $this->lowerLayer->getConnection();
     }

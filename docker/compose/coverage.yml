@@ -1,17 +1,17 @@
 services:
-    squirrel_queries_coverage:
+    coverage:
         image: thecodingmachine/php:8.3-v4-cli
         container_name: squirrel_queries_coverage
         tty: true
         working_dir: /usr/src/app
         # --path-coverage could be added later, it is much too slow currently and only supported by xdebug
-        command: [ "vendor/bin/phpunit", "--colors=always", "--stop-on-defect", "--coverage-html", "tests/_reports"]
+        command: [ "vendor/bin/phpunit", "--configuration=tools/phpunit.xml.dist", "--colors=always", "--stop-on-defect", "--coverage-html", "tests/_reports"]
         volumes:
+            - ./composer.json:/usr/src/app/composer.json
             - ./src:/usr/src/app/src
             - ./tests:/usr/src/app/tests
-            - ./composer.json:/usr/src/app/composer.json
-            - ./phpunit.xml.dist:/usr/src/app/phpunit.xml.dist
-            - ./vendor-bin:/usr/src/app/vendor-bin
+            - ./tools:/usr/src/app/tools
+            - ./vendor:/usr/src/app/vendor
         environment:
             # We currently use PCOV because it is at least 8x faster
             # - 3 seconds compared to 23 seconds (or 5 minutes with path coverage enabled)
@@ -26,35 +26,39 @@ services:
             PHP_EXTENSION_PDO_SQLITE: 1
             PHP_INI_MEMORY_LIMIT: 1g
             PHP_INI_ERROR_REPORTING: E_ALL
-            SQUIRREL_TEST_SQLITE: 'sqlite:///:memory:'
-            SQUIRREL_TEST_POSTGRES: 'postgres://user:password@squirrel_queries_postgres/postgres?charset=UTF-8'
-            SQUIRREL_TEST_MYSQL: 'mysql://user:password@squirrel_queries_mysql/shop'
-            SQUIRREL_TEST_MARIADB: 'mysql://user:password@squirrel_queries_mariadb/shop'
-            STARTUP_COMMAND_1: composer update --no-scripts --no-plugins --quiet
+            SQUIRREL_CONNECTION_USER: 'user'
+            SQUIRREL_CONNECTION_PASSWORD: 'password'
+            SQUIRREL_CONNECTION_ROOT_PASSWORD: 'whatever'
+            SQUIRREL_CONNECTION_DBNAME: 'shop'
+            SQUIRREL_CONNECTION_HOST_MYSQL: 'squirrel_queries_mysql'
+            SQUIRREL_CONNECTION_HOST_MARIADB: 'squirrel_queries_mariadb'
+            SQUIRREL_CONNECTION_HOST_POSTGRES: 'squirrel_queries_postgres'
+            COMPOSER_ROOT_VERSION: 'dev-master'
+            STARTUP_COMMAND_1: composer --no-interaction --no-progress --no-scripts --no-plugins --quiet update
             STARTUP_COMMAND_2: rm -rf /usr/src/app/tests/_reports/*
         depends_on:
-            - squirrel_queries_postgres
-            - squirrel_queries_mysql
-            - squirrel_queries_mariadb
+            - postgres
+            - mysql
+            - mariadb
 
-    squirrel_queries_postgres:
+    postgres:
         image: postgres:latest
         container_name: squirrel_queries_postgres
         environment:
+            POSTGRES_DB: 'shop'
             POSTGRES_USER: 'user'
             POSTGRES_PASSWORD: 'password'
 
-    squirrel_queries_mysql:
+    mysql:
         image: mysql/mysql-server:latest
         container_name: squirrel_queries_mysql
-        command: --default-authentication-plugin=mysql_native_password
         environment:
             MYSQL_ROOT_PASSWORD: 'whatever'
             MYSQL_DATABASE: 'shop'
             MYSQL_USER: 'user'
             MYSQL_PASSWORD: 'password'
 
-    squirrel_queries_mariadb:
+    mariadb:
         image: mariadb:latest
         container_name: squirrel_queries_mariadb
         environment:

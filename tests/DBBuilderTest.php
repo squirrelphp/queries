@@ -15,8 +15,7 @@ use Squirrel\Queries\DBInterface;
 
 class DBBuilderTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var DBInterface&MockInterface */
-    private DBInterface $db;
+    private DBInterface&MockInterface $db;
     private DBBuilder $builder;
 
     protected function setUp(): void
@@ -62,12 +61,10 @@ class DBBuilderTest extends \PHPUnit\Framework\TestCase
 
     public function testTransaction(): void
     {
-        // The three arguments used
         $a = 2;
         $b = 3;
         $c = 37;
 
-        // Transaction function to execute
         $function = function (int $a, int $b, int $c): int {
             return $a + $b + $c;
         };

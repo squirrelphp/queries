@@ -2,6 +2,8 @@
 
 namespace Squirrel\Queries;
 
+use Squirrel\Connection\ConnectionInterface;
+
 /**
  * Main interface which should be used as type hint / for dependency injection
  */
@@ -182,5 +184,5 @@ interface DBInterface
      * Get connection object for low-level access when there is no other way of solving something - should
      * rarely be necessary
      */
-    public function getConnection(): object;
+    public function getConnection(): ConnectionInterface;
 }

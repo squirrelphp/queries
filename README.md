@@ -5,9 +5,9 @@ Squirrel Queries
 
 Provides a slimmed down concise interface for low level database queries and transactions (DBInterface) as well as a query builder to make it easier and more expressive to create queries (DBBuilderInterface). The interfaces are limited to avoid confusion/misuse and encourage fail-safe usage.
 
-Doctrine DBAL is used for the underlying connection (and abstraction) handling, what we add are an insertOrUpdate functionality (known as UPSERT), structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.). This library also smoothes over some differences between MySQL, Postgres and SQLite. While DBAL is a dependency for now, when using this library you only need to configure/create the necessary DBAL connections in your code, no other parts of DBAL are relevant.
+[squirrelphp/connection](https://github.com/squirrelphp/connection) is used for the underlying connection (and abstraction) handling starting with v2.0 (v1.3 and below had Doctrine DBAL as a dependency), what we add are an insertOrUpdate functionality (known as UPSERT), structured queries which are easier to write and read (and for which the query builder can be used), and the possibility to layer database concerns (like actual implementation, connections retries, performance measurements, logging, etc.). This library also smoothes over some differences between MySQL, Postgres and SQLite.
 
-By default this library provides two layers, one dealing with Doctrine DBAL (passing the queries, processing and returning the results) and one dealing with errors (DBErrorHandler). DBErrorHandler catches deadlocks and connection problems and tries to repeat the query or transaction, and it unifies the exceptions coming from DBAL so the originating call to DBInterface is provided and the error can easily be found.
+By default this library provides two layers, one dealing with the actual database connection (passing the queries, processing and returning the results) and one dealing with errors (DBErrorHandler). DBErrorHandler catches deadlocks and connection problems and tries to repeat the query or transaction, and it unifies the exceptions coming from the connection so the originating call to DBInterface is provided and the error can easily be found.
 
 Installation
 ------------
@@ -27,79 +27,80 @@ Table of contents
 Setting up
 ----------
 
-Use Squirrel\Queries\DBInterface as a type hint in your services for the low-level interface, and/or Squirrel\Queries\DBBuilderInterface for the query builder. The low-level interface options are based upon Doctrine and PDO with some tweaks, and the builder interface is an expressive way to write structured (and not too complex) queries.
+Use Squirrel\Queries\DBInterface as a type hint in your services for the low-level interface, and/or Squirrel\Queries\DBBuilderInterface for the query builder - the query builder is an expressive way to write structured (and not too complex) queries.
 
-If you know Doctrine or PDO you should be able to use this library easily. You should especially have an extra look at structured queries and UPSERT, as these are additions to the low-level interface, helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
+If you know Doctrine DBAL or PDO you should be able to use this library easily, while avoiding some of their complexities. You should especially have an extra look at structured queries and UPSERT, as these are additions to the low-level interface, helping you to make readable queries and taking care of your column field names and parameters automatically, making it easier to write secure queries.
 
 For a solution which integrates easily with the Symfony framework, check out [squirrelphp/queries-bundle](https://github.com/squirrelphp/queries-bundle), and for entity and repository support check out [squirrelphp/entities](https://github.com/squirrelphp/entities) and [squirrelphp/entities-bundle](https://github.com/squirrelphp/entities-bundle).
 
-If you want to assemble a DBInterface object yourself, something like the following code can be a start:
+If you want to assemble a DBInterface and DBBuilder yourself (even though you will likely want to use integration bundles instead), something like the following code can be a start:
 
-    use Doctrine\DBAL\DriverManager;
-    use Squirrel\Queries\DBBuilderInterface;
-    use Squirrel\Queries\DBInterface;
-    use Squirrel\Queries\Doctrine\DBErrorHandler;
-    use Squirrel\Queries\Doctrine\DBMySQLImplementation;
+```php
+use Squirrel\Connection\Config\Mysql;
+use Squirrel\Connection\PDO\ConnectionPDO;
+use Squirrel\Queries\DBBuilder;
+use Squirrel\Queries\DBInterface;
+use Squirrel\Queries\DB\ErrorHandler;
+use Squirrel\Queries\DB\MySQLImplementation;
 
-    // Create a doctrine connection
-    $dbalConnection = DriverManager::getConnection([
-        'url' => 'mysql://user:secret@localhost/mydb',
-        'driverOptions' => [
-            \PDO::ATTR_EMULATE_PREPARES => false, // Separates query and values
-            \PDO::MYSQL_ATTR_FOUND_ROWS => true, // important so MySQL behaves like Postgres/SQLite
-            \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,
-        ],
-    ]);
+// Create a squirrel connection
+$connection = new ConnectionPDO(
+    new Mysql(
+        host: 'localhost',
+        user: 'user',
+        password: 'password',
+        dbname: 'mydb',
+    ),
+);
 
-    // Create a MySQL implementation layer
-    $implementationLayer = new DBMySQLImplementation($dbalConnection);
+// Create a MySQL implementation layer
+$implementationLayer = new MySQLImplementation($connection);
 
-    // Create an error handler layer
-    $errorLayer = new DBErrorHandler();
+// Create an error handler layer
+$errorLayer = new ErrorHandler();
 
-    // Set implementation layer beneath the error layer
-    $errorLayer->setLowerLayer($implementationLayer);
+// Set implementation layer beneath the error layer
+$errorLayer->setLowerLayer($implementationLayer);
 
-    // Rename our layered service - this is now our database object
-    $db = $errorLayer;
+// Rename our layered service - this is now our database object
+$db = $errorLayer;
 
-    // $db is now useable and can be injected
-    // anywhere you need it. Typehint it with
-    // \Squirrel\Queries\DBInterface
+// $db is now useable and can be injected
+// anywhere you need it. Typehint it with
+// \Squirrel\Queries\DBInterface
+$fetchEntry = function(DBInterface $db): array {
+    return $db->fetchOne('SELECT * FROM table');
+};
 
-    $fetchEntry = function(DBInterface $db): array {
-        return $db->fetchOne('SELECT * FROM table');
-    };
+$fetchEntry($db);
 
-    $fetchEntry($db);
+// A builder just needs a DBInterface to be created:
+$queryBuilder = new DBBuilder($db);
 
-    // A builder just needs a DBInterface to be created:
+// The query builder generates more readable queries, and
+// helps your IDE in terms of type hints / possible options
+// depending on the query you are doing
+$entries = $queryBuilder
+    ->select()
+    ->fields([
+      'id',
+      'name',
+    ])
+    ->where([
+      'name' => 'Robert',
+    ])
+    ->getAllEntries();
 
-    $queryBuilder = new DBBuilderInterface($db);
+// If you want to add more layers, you can create a
+// class which implements DBRawInterface and includes
+// the DBPassToLowerLayer trait and then just overwrite
+// the functions you want to change, and then connect
+// it to the other layers through setLowerLayer
 
-    // The query builder generates more readable queries, and
-    // helps your IDE in terms of type hints / possible options
-    // depending on the query you are doing
-    $entries = $queryBuilder
-        ->select()
-        ->fields([
-          'id',
-          'name',
-        ])
-        ->where([
-          'name' => 'Robert',
-        ])
-        ->getAllEntries();
-
-    // If you want to add more layers, you can create a
-    // class which implements DBRawInterface and includes
-    // the DBPassToLowerLayer trait and then just overwrite
-    // the functions you want to change, and then connect
-    // it to the other layers through setLowerLayer
-
-    // It is also a good idea to catch \Squirrel\Queries\DBException
-    // in your application in case of a DB error so it
-    // can be handled gracefully
+// It is also a good idea to catch \Squirrel\Queries\DBException
+// in your application in case of a DB error so it
+// can be handled gracefully
+```
 
 Database support
 ----------------
@@ -294,13 +295,13 @@ with the values `5`, `Henry` and `Liam`.
 
 UPSERT (update-or-insert) queries are an addition to SQL, known under different queries in different database systems:
 
-- MySQL implemented them as "INSERT ... ON DUPLICATE KEY UPDATE"
+- MySQL and MariaDB implemented them as "INSERT ... ON DUPLICATE KEY UPDATE"
 - PostgreSQL and SQLite as "INSERT ... ON CONFLICT (index) DO UPDATE"
 - The ANSI standard knows them as MERGE queries, although those can be a bit different
 
 In this library we call this type of query `insertOrUpdate`. Such a query tries to insert a row, but if the row already exists it does an update instead, and all of this is done as one atomic operation in the database. If implemented without an UPSERT query you would need at least an UPDATE and then possibly an INSERT query within a transaction to do the same. UPSERT exists to be a faster and easier solution.
 
-PostgreSQL and SQLite need the specific column names which form a unique index in the table which is used to determine if an entry already exists or if a new entry is inserted. MySQL does this automatically, but for all database systems it is important to have a unique index involved in an UPSERT query.
+PostgreSQL and SQLite need the specific column names which form a unique index in the table which is used to determine if an entry already exists or if a new entry is inserted. MySQL/MariaDB do this automatically, but for all database systems it is important to have a unique index involved in an UPSERT query.
 
 #### Usage and examples
 
@@ -319,7 +320,7 @@ $db->insertOrUpdate('users_visits', [
 ]);
 ```
 
-For MySQL, this query would be converted to:
+For MySQL/MariaDB, this query would be converted to:
 
 ```php
 $db->change('INSERT INTO `users_visits` (`userId`,`visit`) VALUES (?,?) ON DUPLICATE KEY UPDATE `visit` = `visit` + 1', [5, 1]);
@@ -344,7 +345,7 @@ $db->insertOrUpdate('users_names', [
 ]);
 ```
 
-This would INSERT with userId and firstName, but if the row already exists, it would just update firstName to Jane, so for MySQL it would be converted to:
+This would INSERT with userId and firstName, but if the row already exists, it would just update firstName to Jane, so for MySQL/MariaDB it would be converted to:
 
 ```php
 $db->change('INSERT INTO `users_names` (`userId`,`firstName`) VALUES (?,?) ON DUPLICATE KEY UPDATE `firstName`=?, [5, 'Jane', 'Jane']);
@@ -816,12 +817,12 @@ BLOB handling for Postgres
 For MySQL and SQLite retrieving or inserting/updating BLOBs (Binary Large Objects) works just the same as with shorter/non-binary string fields. Postgres needs some adjustments, but these are streamlined by this library:
 
 - For SELECT queries, streams returned by Postgres are automatically converted into strings, mimicking how MySQL and SQLite are doing it
-- For INSERT/UPDATE queries, you need to wrap BLOB values with an instance of LargeObject provided by this library.
+- For INSERT/UPDATE queries, you need to wrap BLOB values with an instance of LargeObject provided by `squirrelphp/connection`.
 
 So the following works if `file_data` is a BYTEA field in Postgres:
 
 ```php
-use Squirrel\Queries\LargeObject;
+use Squirrel\Connection\LargeObject;
 
 $rowsAffected = $dbBuilder
     ->update()

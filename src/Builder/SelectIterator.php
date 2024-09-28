@@ -14,7 +14,7 @@ class SelectIterator implements \Iterator, BuilderInterface
 {
     use SelectIteratorTrait;
 
-    private DBInterface $source;
+    private readonly DBInterface $source;
     private ?DBSelectQueryInterface $selectReference = null;
     private ?array $lastResult = null;
 

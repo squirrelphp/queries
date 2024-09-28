@@ -1,12 +1,10 @@
 <?php
 
-namespace Squirrel\Queries\Doctrine;
+namespace Squirrel\Queries\DB;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception\ConnectionException;
-use Doctrine\DBAL\Exception\DeadlockException;
-use Doctrine\DBAL\Exception\DriverException;
-use Doctrine\DBAL\Exception\LockWaitTimeoutException;
+use Squirrel\Connection\Exception\ConnectionException;
+use Squirrel\Connection\Exception\DriverException;
+use Squirrel\Connection\Exception\RetryableExceptionInterface;
 use Squirrel\Debug\Debug;
 use Squirrel\Queries\DBException;
 use Squirrel\Queries\DBInterface;
@@ -26,7 +24,7 @@ use Squirrel\Queries\Exception\DBLockException;
  * For other specific DB errors we generate a richer exception so outer layers
  * know better what went wrong with our query
  */
-class DBErrorHandler implements DBRawInterface
+class ErrorHandler implements DBRawInterface
 {
     // Default implementation of all DBRawInterface functions - pass to lower layer
     use DBPassToLowerLayerTrait;
@@ -134,14 +132,11 @@ class DBErrorHandler implements DBRawInterface
     ): mixed {
         try {
             return $this->lowerLayer->transaction($func, ...$arguments);
-        } catch (DeadlockException | LockWaitTimeoutException $e) { // Deadlock or lock timeout occured
+        } catch (RetryableExceptionInterface $e) { // Deadlock or lock timeout occured
             // Attempt to roll back
             try {
-                /**
-                 * @var Connection $connection
-                 */
                 $connection = $this->lowerLayer->getConnection();
-                $connection->rollBack();
+                $connection->rollbackTransaction();
             } catch (\Exception $eNotUsed) {
             }
 
@@ -166,11 +161,8 @@ class DBErrorHandler implements DBRawInterface
         } catch (ConnectionException $e) { // Connection error occured
             // Attempt to roll back, suppress any possible exceptions
             try {
-                /**
-                 * @var Connection $connection
-                 */
                 $connection = $this->lowerLayer->getConnection();
-                $connection->rollBack();
+                $connection->rollbackTransaction();
             } catch (\Exception $eNotUsed) {
             }
 
@@ -195,11 +187,8 @@ class DBErrorHandler implements DBRawInterface
         } catch (DriverException $e) { // Some other SQL related exception
             // Attempt to roll back, suppress any possible exceptions
             try {
-                /**
-                 * @var Connection $connection
-                 */
                 $connection = $this->lowerLayer->getConnection();
-                $connection->rollBack();
+                $connection->rollbackTransaction();
             } catch (\Exception $eNotUsed) {
             }
 
@@ -216,12 +205,9 @@ class DBErrorHandler implements DBRawInterface
         } catch (\Exception | \Throwable $e) { // Other exception, throw it as is, we do not know how to deal with it
             // Attempt to roll back, suppress any possible exceptions
             try {
-                /**
-                 * @var Connection $connection
-                 */
                 $connection = $this->lowerLayer->getConnection();
-                $connection->rollBack();
-            } catch (\Exception $eNotUsed) {
+                $connection->rollbackTransaction();
+            } catch (\Exception) {
             }
 
             // Set flag for "not in a transaction"
@@ -323,7 +309,7 @@ class DBErrorHandler implements DBRawInterface
 
             // Repeat our function
             return $this->internalCall($name, $arguments, $connectionRetries, $lockRetries);
-        } catch (DeadlockException | LockWaitTimeoutException $e) {
+        } catch (RetryableExceptionInterface $e) {
             // If we are in a transaction we escalate it to transaction context
             if ($this->lowerLayer->inTransaction()) {
                 throw $e;
@@ -368,13 +354,9 @@ class DBErrorHandler implements DBRawInterface
         \usleep(\array_shift($connectionRetries));
 
         try {
-            /**
-             * @var Connection $connection
-             */
             $connection = $this->lowerLayer->getConnection();
             // Close connection and establish a new connection
-            $connection->close();
-            $connection->connect();
+            $connection->reconnect();
         } catch (ConnectionException $e) { // Connection could not be established - try again
             return $this->attemptReconnect($connectionRetries);
         }

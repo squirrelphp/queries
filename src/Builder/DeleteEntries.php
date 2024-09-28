@@ -24,7 +24,7 @@ class DeleteEntries implements BuilderInterface
     private bool $confirmNoWhere = false;
 
     public function __construct(
-        private DBInterface $db,
+        private readonly DBInterface $db,
     ) {
     }
 

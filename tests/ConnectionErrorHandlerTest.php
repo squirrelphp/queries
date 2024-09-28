@@ -2,30 +2,28 @@
 
 namespace Squirrel\Queries\Tests;
 
-use Doctrine\DBAL\Driver\Connection;
-use Doctrine\DBAL\Driver\PDO\Exception as PDOException;
-use Doctrine\DBAL\Exception\ConnectionException;
-use Doctrine\DBAL\Exception\DeadlockException;
-use Doctrine\DBAL\Exception\DriverException;
 use Hamcrest\Core\IsEqual;
+use Squirrel\Connection\ConnectionInterface;
+use Squirrel\Connection\Exception\ConnectionException;
+use Squirrel\Connection\Exception\DeadlockException;
+use Squirrel\Connection\Exception\DriverException;
+use Squirrel\Queries\DB\ErrorHandler;
 use Squirrel\Queries\DBRawInterface;
 use Squirrel\Queries\DBSelectQueryInterface;
-use Squirrel\Queries\Doctrine\DBErrorHandler;
 use Squirrel\Queries\Exception\DBConnectionException;
 use Squirrel\Queries\Exception\DBDriverException;
 use Squirrel\Queries\Exception\DBLockException;
 
 /**
- * Test our error handler based on the Doctrine library
+ * Test our error handler based on squirrelphp/connection
  */
-class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
+class ConnectionErrorHandlerTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * Test that a new transaction is correctly forwarded to the lower layer
      */
     public function testNewTransaction(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -51,7 +49,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andReturn(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -66,7 +64,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
      */
     public function testTransactionWhenActiveTransactionExists(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -85,7 +82,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andReturn(true);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -97,7 +94,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $selectQueryResult = new class implements DBSelectQueryInterface {
@@ -109,7 +105,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andReturn($selectQueryResult);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->select('SELECT * FROM table');
@@ -119,7 +115,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testFetchPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $selectQueryResult = new class implements DBSelectQueryInterface {
@@ -131,7 +126,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with($selectQueryResult)
             ->andReturn(['dada' => '55']);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->fetch($selectQueryResult);
@@ -141,7 +136,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testClearPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $selectQueryResult = new class implements DBSelectQueryInterface {
@@ -152,7 +146,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->once()
             ->with($selectQueryResult);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $errorHandler->clear($selectQueryResult);
@@ -162,7 +156,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testFetchOnePassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -171,7 +164,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andReturn(['dada' => '55']);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->fetchOne('SELECT * FROM table');
@@ -181,7 +174,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testFetchAllPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -190,7 +182,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andReturn([['dada' => '55'], ['dada' => 33]]);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->fetchAll('SELECT * FROM table');
@@ -200,7 +192,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testFetchAllAndFlattenPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $expected = [['dada' => '55'], ['dada' => 33]];
@@ -211,7 +202,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andReturn($expected);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->fetchAllAndFlatten('SELECT * FROM table');
@@ -221,7 +212,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testInsertPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -233,7 +223,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ])
             ->andReturn(33);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->insert('tableName', [
@@ -246,7 +236,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testUpsertPassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -257,7 +246,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
                 'fufu' => true,
             ], ['dada']);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $errorHandler->insertOrUpdate('tableName', [
@@ -270,7 +259,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testUpdatePassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -283,7 +271,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ])
             ->andReturn(7);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->update('blobs.aa_sexy', [
@@ -297,7 +285,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testDeletePassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -309,7 +296,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ])
             ->andReturn(6);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->delete('tableName', [
@@ -322,7 +309,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testChangePassToLowerLayer(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         $lowerLayer
@@ -334,7 +320,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             )
             ->andReturn(9);
 
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         $result = $errorHandler->change(
@@ -347,7 +333,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testRedoTransactionAfterDeadlock(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -373,8 +358,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andThrow(
                 new DeadlockException(
-                    PDOException::new(new \PDOException('pdo deadlock exception')),
-                    null,
+                    new \PDOException('pdo deadlock exception'),
+                    'pdo deadlock exception',
                 ),
             );
 
@@ -384,7 +369,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andReturn(173);
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -404,7 +389,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -416,7 +401,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testRedoTransactionAfterConnectionProblem(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -442,8 +426,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andThrow(
                 new ConnectionException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
@@ -453,7 +437,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andReturn(173);
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -468,12 +452,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andThrow(new \Exception('some random rollback exception'));
 
         $connection
-            ->shouldReceive('close')
-            ->once()
-            ->withNoArgs();
-
-        $connection
-            ->shouldReceive('connect')
+            ->shouldReceive('reconnect')
             ->once()
             ->withNoArgs();
 
@@ -483,7 +462,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -495,7 +474,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
 
     public function testRedoTransactionAfterConnectionProblemMultipleAttempts(): void
     {
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -521,8 +499,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andThrow(
                 new ConnectionException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
@@ -532,7 +510,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andReturn(173);
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -547,24 +525,19 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andThrow(new \Exception('some random rollback exception'));
 
         $connection
-            ->shouldReceive('close')
-            ->times(3)
-            ->withNoArgs();
-
-        $connection
-            ->shouldReceive('connect')
+            ->shouldReceive('reconnect')
             ->times(2)
             ->withNoArgs()
             ->andThrow(
                 new ConnectionException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
         $connection
-            ->shouldReceive('connect')
-            ->times(1)
+            ->shouldReceive('reconnect')
+            ->once()
             ->withNoArgs();
 
         $lowerLayer
@@ -573,7 +546,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -587,7 +560,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBLockException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -613,12 +585,12 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andThrow(
                 new DeadlockException(
-                    PDOException::new(new \PDOException('pdo deadlock exception')),
-                    null,
+                    new \PDOException('pdo deadlock exception'),
+                    'pdo deadlock exception',
                 ),
             );
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -637,7 +609,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
         $errorHandler->setLockRetries([]);
 
@@ -649,7 +621,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBConnectionException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -675,8 +646,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andThrow(
                 new ConnectionException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
@@ -686,7 +657,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andReturn(173);
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -705,7 +676,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
         $errorHandler->setConnectionRetries([]);
 
@@ -717,7 +688,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBDriverException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -743,12 +713,12 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(IsEqual::equalTo($func), IsEqual::equalTo($a), IsEqual::equalTo($b), IsEqual::equalTo($c))
             ->andThrow(
                 new DriverException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -768,7 +738,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -779,7 +749,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // Example function to pass along
@@ -807,7 +776,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
                 new \InvalidArgumentException('some weird exception'),
             );
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -827,7 +796,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function
@@ -838,7 +807,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DeadlockException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // The call we are expecting to the lower layer
@@ -848,8 +816,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new DeadlockException(
-                    PDOException::new(new \PDOException('pdo deadlock exception')),
-                    null,
+                    new \PDOException('pdo deadlock exception'),
+                    'pdo deadlock exception',
                 ),
             );
 
@@ -860,7 +828,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andReturn(true);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
         $errorHandler->setLockRetries([1]);
 
@@ -872,7 +840,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBLockException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // The call we are expecting to the lower layer
@@ -882,8 +849,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new DeadlockException(
-                    PDOException::new(new \PDOException('pdo deadlock exception')),
-                    null,
+                    new \PDOException('pdo deadlock exception'),
+                    'pdo deadlock exception',
                 ),
             );
 
@@ -894,7 +861,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andReturn(false);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
         $errorHandler->setLockRetries([1]);
 
@@ -906,7 +873,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(ConnectionException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // The call we are expecting to the lower layer
@@ -916,8 +882,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new ConnectionException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
@@ -928,7 +894,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andReturn(true);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
         $errorHandler->setConnectionRetries([1]);
 
@@ -940,7 +906,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBConnectionException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // The call we are expecting to the lower layer
@@ -950,8 +915,8 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new ConnectionException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
@@ -961,7 +926,7 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->withNoArgs()
             ->andReturn(false);
 
-        $connection = \Mockery::mock(Connection::class);
+        $connection = \Mockery::mock(ConnectionInterface::class);
 
         $lowerLayer
             ->shouldReceive('getConnection')
@@ -970,23 +935,12 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->andReturn($connection);
 
         $connection
-            ->shouldReceive('close')
+            ->shouldReceive('reconnect')
             ->once()
             ->withNoArgs();
-
-        $connection
-            ->shouldReceive('connect')
-            ->once()
-            ->withNoArgs();
-
-        $connection
-            ->shouldReceive('ping')
-            ->once()
-            ->withNoArgs()
-            ->andReturn(true);
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
         $errorHandler->setConnectionRetries([1]);
 
@@ -998,7 +952,6 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(DBDriverException::class);
 
-        // Lower layer mock
         $lowerLayer = \Mockery::mock(DBRawInterface::class);
 
         // The call we are expecting to the lower layer
@@ -1008,13 +961,13 @@ class DoctrineErrorHandlerTest extends \PHPUnit\Framework\TestCase
             ->with('SELECT * FROM table')
             ->andThrow(
                 new DriverException(
-                    PDOException::new(new \PDOException('MySQL server has gone away')),
-                    null,
+                    new \PDOException('MySQL server has gone away'),
+                    'MySQL server has gone away',
                 ),
             );
 
         // Error handler instantiation
-        $errorHandler = new DBErrorHandler();
+        $errorHandler = new ErrorHandler();
         $errorHandler->setLowerLayer($lowerLayer);
 
         // Do the transaction function

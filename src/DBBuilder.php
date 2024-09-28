@@ -12,7 +12,7 @@ use Squirrel\Queries\Builder\UpdateEntries;
 /**
  * Super simple class, just returns new objects, does not depend on anything concrete
  */
-class DBBuilder implements DBBuilderInterface
+final readonly class DBBuilder implements DBBuilderInterface
 {
     public function __construct(
         private DBInterface $db,
