@@ -20,7 +20,7 @@
     ],
     "require": {
         "php": ">=8.2",
-        "squirrelphp/connection": "^0.2",
+        "squirrelphp/connection": "^0.3",
         "squirrelphp/debug": "^2.0"
     },
     "require-dev": {
@@ -66,8 +66,8 @@
         "psalm": "vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --show-info=false",
         "psalm_full": "vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --clear-cache && vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --show-info=false",
         "psalm_base": "vendor-bin/psalm/vendor/bin/psalm --config=tools/psalm.xml --set-baseline=tools/psalm-baseline.xml",
-        "phpunit": "vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --cache-result-file=tools/cache/.phpunit.result.cache --colors=always --testsuite=unit",
-        "phpunit_clover": "vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --cache-result-file=tools/cache/.phpunit.result.cache --coverage-text --coverage-clover build/logs/clover.xml",
+        "phpunit": "vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --colors=always --testsuite=unit",
+        "phpunit_clover": "vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --coverage-text --coverage-clover build/logs/clover.xml",
         "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --configuration=tools/phpunit.xml.dist --coverage-html=tests/_reports",
         "phpcs": "vendor-bin/phpcs/vendor/bin/phpcs --standard=tools/ruleset.xml --extensions=php --cache=tools/cache/.phpcs-cache --colors src tests",
         "phpcs_diff": "vendor-bin/phpcs/vendor/bin/phpcs -s --standard=tools/ruleset.xml --extensions=php --cache=tools/cache/.phpcs-cache --colors src tests",

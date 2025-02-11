@@ -339,12 +339,7 @@ abstract class AbstractImplementation implements DBRawInterface
         $rowUpdates = $this->prepareUpsertRowUpdates($rowUpdates, $row, $indexColumns);
 
         // Do all queries in a transaction to correctly emulate the UPSERT
-        $this->transaction(function (
-            string $tableName,
-            array $row,
-            array $indexColumns,
-            array $rowUpdates,
-        ) {
+        $this->transaction(function () use ($tableName, $row, $indexColumns, $rowUpdates): void {
             // Contains all WHERE restrictions for the UPDATE query
             $whereForUpdate = [];
 
@@ -370,7 +365,7 @@ abstract class AbstractImplementation implements DBRawInterface
 
             // Because the UPDATE did not work, we do a regular insert
             $this->insert($tableName, $row);
-        }, $tableName, $row, $indexColumns, $rowUpdates);
+        });
     }
 
     protected function validateMandatoryUpsertParameters(

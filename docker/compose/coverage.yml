@@ -1,6 +1,6 @@
 services:
     coverage:
-        image: thecodingmachine/php:8.3-v4-cli
+        image: thecodingmachine/php:8.4-v4-cli
         container_name: squirrel_queries_coverage
         tty: true
         working_dir: /usr/src/app
